@@ -1,0 +1,20 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: There must be an exclude parameter
+desc: |-
+  Some properties must be excluded. I.e., piglit's JSON produces a lot of
+  time properties which are not interesting.
+type: :bugfix
+component: json_diff
+release: 
+reporter: Matej Cepl <mcepl@redhat.com>
+status: :unstarted
+disposition: 
+creation_time: 2011-10-10 21:31:46.437278 Z
+references: []
+
+id: 9465e033d968b2c64f02b71bce62d5a0323a60be
+log_events: 
+- - 2011-10-10 21:31:48.551344 Z
+  - Matej Cepl <mcepl@redhat.com>
+  - created
+  - ""

@@ -1,86 +1,77 @@
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-// IN THE SOFTWARE.
+#!/usr/bin/rhino
+/*
+This is for now just reimplementation of tlrobinson's json-diff (http://tlrobinson.net/projects/javascript-fun/jsondiff/).
+
+However, later I would like to incorporate algorightm from
+https://github.com/cmsd2/xdiff (which is an implementation in Ruby of
+http://pages.cs.wisc.edu/~yuanwang/xdiff.html)
+ */
+
 var jsonBoxA, jsonBoxB;
 
-var HashStore = {
-  load : function(callback) {
-    if (window.location.hash) {
-      try {
-        var hashObject = JSON.parse(decodeURIComponent(window.location.hash.slice(1)));
-        callback && callback(hashObject.d);
-        return;
-      } catch (e) {
-        console.log()
-      }
-    }
-    callback && callback(null);
-  },
-  sync : function(object) {
-    var hashObject = { d : object };
-    window.location.hash = "#" + encodeURIComponent(JSON.stringify(hashObject));
-  }
-};
+//var HashStore = {
+//  load : function(callback) {
+//    if (window.location.hash) {
+//      try {
+//        var hashObject = JSON.parse(decodeURIComponent(window.location.hash.slice(1)));
+//        callback && callback(hashObject.d);
+//        return;
+//      } catch (e) {
+//        console.log()
+//      }
+//    }
+//    callback && callback(null);
+//  },
+//  sync : function(object) {
+//    var hashObject = { d : object };
+//    window.location.hash = "#" + encodeURIComponent(JSON.stringify(hashObject));
+//  }
+//};
 
-function init() {
-  document.addEventListener("click", clickHandler, false);
+//function init() {
+//  document.addEventListener("click", clickHandler, false);
 
-  jsonBoxA = document.getElementById("jsonA");
-  jsonBoxB = document.getElementById("jsonB");
+//  jsonBoxA = document.getElementById("jsonA");
+//  jsonBoxB = document.getElementById("jsonB");
 
-  HashStore.load(function(data) {
-    if (data) {
-      jsonBoxA.value = data.a;
-      jsonBoxB.value = data.b;
-    }
-  });
+//  HashStore.load(function(data) {
+//    if (data) {
+//      jsonBoxA.value = data.a;
+//      jsonBoxB.value = data.b;
+//    }
+//  });
 
-  startCompare();
-}
+//  startCompare();
+//}
 
-function swapBoxes() {
-  var tmp = jsonBoxA.value;
-  jsonBoxA.value = jsonBoxB.value;
-  jsonBoxB.value = tmp;
-}
+//function startCompare() {
+//  var aValue = jsonBoxA.value;
+//  var bValue = jsonBoxB.value;
 
-function clearBoxes() {
-  jsonBoxA.value = "";
-  jsonBoxB.value = "";
-}
+//  var objA, objB;
+//  try {
+//    objA = JSON.parse(aValue);
+//    jsonBoxA.style.backgroundColor = "";
+//  } catch(e) {
+//    jsonBoxA.style.backgroundColor = "rgba(255,0,0,0.5)";
+//  }
+//  try {
+//    objB = JSON.parse(bValue);
+//    jsonBoxB.style.backgroundColor = "";
+//  } catch(e) {
+//    jsonBoxB.style.backgroundColor = "rgba(255,0,0,0.5)";
+//  }
 
-function startCompare() {
-  var aValue = jsonBoxA.value;
-  var bValue = jsonBoxB.value;
+//  HashStore.sync({
+//    a : aValue,
+//    b : bValue
+//  });
 
-  var objA, objB;
-  try {
-    objA = JSON.parse(aValue);
-    jsonBoxA.style.backgroundColor = "";
-  } catch(e) {
-    jsonBoxA.style.backgroundColor = "rgba(255,0,0,0.5)";
-  }
-  try {
-    objB = JSON.parse(bValue);
-    jsonBoxB.style.backgroundColor = "";
-  } catch(e) {
-    jsonBoxB.style.backgroundColor = "rgba(255,0,0,0.5)";
-  }
+//  results = document.getElementById("results");
+//  removeAllChildren(results);
 
-  HashStore.sync({
-    a : aValue,
-    b : bValue
-  });
-
-  results = document.getElementById("results");
-  removeAllChildren(results);
-
-  compareTree(objA, objB, "root", results);
-}
+//  compareTree(objA, objB, "root", results);
+//}
 
 function compareTree(a, b, name, results) {
   var typeA = typeofReal(a);
@@ -161,11 +152,8 @@ function removeAllChildren(node) {
   }
 }
 
-function isArray(value) {
-  return value && typeof value === "object" && value.constructor === Array;
-}
 function typeofReal(value) {
-  return isArray(value) ? "array" : typeof value;
+  return Array.isArray(value) ? "array" : typeof value;
 }
 
 function clickHandler(e) {
@@ -177,3 +165,5 @@ function clickHandler(e) {
       e.target.setAttribute("closed", "yes");
   }
 }
+
+/* vim: set ts=2 et sw=2 tw=80: */

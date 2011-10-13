@@ -1,0 +1,15 @@
+[submodule "xdiff/ruby"]
+	path = xdiff/ruby
+	url = git://github.com/cmsd2/xdiff.git
+[submodule "xdiff/UM-C"]
+	path = xdiff/UM-C
+	url = git@gitorious.org:json_diff/x-diff_c.git
+[submodule "xdiff/UM-J"]
+	path = xdiff/UM-J
+	url = git@gitorious.org:json_diff/x-diff_j.git
+[submodule "test/data"]
+	path = test/data
+	url = git@gitorious.org:json_diff/test-data.git
+[submodule "hinnerup"]
+	path = hinnerup
+	url = git@gitorious.org:json_diff/jsonhandler.git
