@@ -1,115 +1,133 @@
-#!/usr/bin/rhino
-/*
-This is for now just reimplementation of tlrobinson's json-diff (http://tlrobinson.net/projects/javascript-fun/jsondiff/).
-
-However, later I would like to incorporate algorightm from
-https://github.com/cmsd2/xdiff (which is an implementation in Ruby of
-http://pages.cs.wisc.edu/~yuanwang/xdiff.html)
- */
-
+#!/usr/bin/rhino -debug
 var jsonBoxA, jsonBoxB;
 
-//var HashStore = {
-//  load : function(callback) {
-//    if (window.location.hash) {
-//      try {
-//        var hashObject = JSON.parse(decodeURIComponent(window.location.hash.slice(1)));
-//        callback && callback(hashObject.d);
-//        return;
-//      } catch (e) {
-//        console.log()
-//      }
-//    }
-//    callback && callback(null);
-//  },
-//  sync : function(object) {
-//    var hashObject = { d : object };
-//    window.location.hash = "#" + encodeURIComponent(JSON.stringify(hashObject));
-//  }
-//};
-
-//function init() {
-//  document.addEventListener("click", clickHandler, false);
-
-//  jsonBoxA = document.getElementById("jsonA");
-//  jsonBoxB = document.getElementById("jsonB");
-
-//  HashStore.load(function(data) {
-//    if (data) {
-//      jsonBoxA.value = data.a;
-//      jsonBoxB.value = data.b;
-//    }
-//  });
-
-//  startCompare();
-//}
-
-//function startCompare() {
-//  var aValue = jsonBoxA.value;
-//  var bValue = jsonBoxB.value;
-
-//  var objA, objB;
-//  try {
-//    objA = JSON.parse(aValue);
-//    jsonBoxA.style.backgroundColor = "";
-//  } catch(e) {
-//    jsonBoxA.style.backgroundColor = "rgba(255,0,0,0.5)";
-//  }
-//  try {
-//    objB = JSON.parse(bValue);
-//    jsonBoxB.style.backgroundColor = "";
-//  } catch(e) {
-//    jsonBoxB.style.backgroundColor = "rgba(255,0,0,0.5)";
-//  }
-
-//  HashStore.sync({
-//    a : aValue,
-//    b : bValue
-//  });
-
-//  results = document.getElementById("results");
-//  removeAllChildren(results);
-
 //  compareTree(objA, objB, "root", results);
-//}
 
-function compareTree(a, b, name, results) {
+function JSONDiff(fn1, fn2) {
+  this.obj1 = JSON.parse(readFile(fn1));
+  this.obj2 = JSON.parse(readFile(fn2));
+}
+
+/**
+ * Compare two objects recursively
+ *
+ *
+ * For example, comparing object A
+ *
+ * { "a": 1,
+ *   "b": 2,
+ *   "son" : {
+ *      "name": "Janošek"
+ *    }
+ * }
+ *
+ * and
+ *
+ * { "a": 2,
+ *   "c": 3
+ *   "daughter" : {
+ *      "name": "Maruška"
+ *    }
+ * }
+ *
+ * we get
+ *
+ * {
+ *   "insert": [
+ *     { "c": 3 },
+ *     {
+ *       "daughter" : {
+ *         "name": "Maruška"
+ *       }
+ *     }
+ *    ],
+ *   "delete": [
+ *     { "b": 2 },
+ *     {
+ *       "son" : {
+ *         "name": "Janošek"
+ *       }
+ *     }
+ *    ],
+ *   "update": { "a": 2 }
+ *    ]
+ * }
+ */
+JSONDiff.prototype.compareTree = function compareTree(a, b, name) {
+  function typeofReal(value) {
+    return Array.isArray(value) ? "array" : typeof value;
+  }
+  
+  function isScalar(value) {
+    var typeStr = typeofReal(value);
+    return !((typeStr == "array") || (typeStr == "object"));
+  }
+
+  var equal = false;
+  var elements = {};
+  
+  for (var key in a) {
+    if a.hasOwnProperty(key) {
+      elements[key] = null;
+    }
+  }
+  for (var key in b) {
+    if b.hasOwnProperty(key) {
+      elements[key] = null;
+    }
+  }
+
+//  print("compareTree: name = " + name);
   var typeA = typeofReal(a);
   var typeB = typeofReal(b);
 
-  var typeSpanA = document.createElement("span");
-  typeSpanA.appendChild(document.createTextNode("("+typeA+")"))
-  typeSpanA.setAttribute("class", "typeName");
+  if (typeA !== typeB) {
+    // There is not much to be done when the objects are not of
+    // the same type
+    return {
+      'deleted': a,
+      'inserted': b
+    }
+  }
 
-  var typeSpanB = document.createElement("span");
-  typeSpanB.appendChild(document.createTextNode("("+typeB+")"))
-  typeSpanB.setAttribute("class", "typeName");
+  // Now we have both objects of the same type, so
+  // we can evaluate just type of one
+  // If it is array ...
+  if (typeA === "array") {
+    var results = {
+      'updated': {}
+    };
+    var maxLen = a.length > b.length ? a.length : b.length;
+    for (var i = 0; i < maxLen; i++) {
+      if (isScalar(a[i]) && isScalar(b[i])) {
+        if (a[i] !== b[i]) {
+          results['updated'][i] = b[i];
+        }
+      }
+    }
+  }
+  
+  if (typeA === "object") {
+  }
 
-  var aString = (typeA === "object" || typeA === "array") ? "" : String(a) + " ";
-  var bString = (typeB === "object" || typeB === "array") ? "" : String(b) + " ";
+/*
+two trees are equal when:
+- they have same keys,
+- properties of the same keys have same values
+====
+if keys are not same, then whole subobject ==> ADDED/DELETED
+if property values are not same && value is scalar, ==> UPDATED
+if trees are not same, go one level down and compare two siblings
+ */
 
-  var leafNode = document.createElement("span");
-  leafNode.appendChild(document.createTextNode(name));
   if (a === undefined) {
-    leafNode.setAttribute("class", "added");
-    leafNode.appendChild(document.createTextNode(": " + bString));
-    leafNode.appendChild(typeSpanB);
+    this.results['inserted'].push(b);
   }
   else if (b === undefined) {
-    leafNode.setAttribute("class", "removed");
-    leafNode.appendChild(document.createTextNode(": " + aString));
-    leafNode.appendChild(typeSpanA);
+    this.results['deleted'].push(a);
   }
   else if (typeA !== typeB || (typeA !== "object" && typeA !== "array" && a !== b)) {
-    leafNode.setAttribute("class", "changed");
-    leafNode.appendChild(document.createTextNode(": " + aString));
-    leafNode.appendChild(typeSpanA);
-    leafNode.appendChild(document.createTextNode(" => "+ bString));
-    leafNode.appendChild(typeSpanB);
-  }
-  else {
-    leafNode.appendChild(document.createTextNode(": " + aString));
-    leafNode.appendChild(typeSpanA);
+    this.results['updated'].push(b);
   }
 
   if (typeA === "object" || typeA === "array" || typeB === "object" || typeB === "array") {
@@ -126,44 +144,26 @@ function compareTree(a, b, name, results) {
     }
     keys.sort();
 
-    var listNode = document.createElement("ul");
-    listNode.appendChild(leafNode);
-
     for (var i = 0; i < keys.length; i++) {
       if (keys[i] === keys[i-1]) {
         continue;
       }
-      var li = document.createElement("li");
-      listNode.appendChild(li);
-
-      compareTree(a && a[keys[i]], b && b[keys[i]], keys[i], li);
+      this.compareTree(a && a[keys[i]], b && b[keys[i]], keys[i]);
     }
-    results.appendChild(listNode);
   }
-  else {
-    results.appendChild(leafNode);
-  }
+};
+
+JSONDiff.prototype.diff = function diff() {
+  this.compareTree(this.obj1, this.obj2, "root");
+  return this.results;
+};
+
+if (arguments.length == 2) {
+  var diffObj = new JSONDiff(arguments[0], arguments[1]);
+//  print(diffObj);
+  var diff = diffObj.diff();
+  print (JSON.stringify(diff));
 }
 
-function removeAllChildren(node) {
-  var child;
-  while (child = node.lastChild) {
-    node.removeChild(child);
-  }
-}
-
-function typeofReal(value) {
-  return Array.isArray(value) ? "array" : typeof value;
-}
-
-function clickHandler(e) {
-  var e = e || window.event;
-  if (e.target.nodeName.toUpperCase() === "UL") {
-    if (e.target.getAttribute("closed") === "yes")
-      e.target.setAttribute("closed", "no");
-    else
-      e.target.setAttribute("closed", "yes");
-  }
-}
 
 /* vim: set ts=2 et sw=2 tw=80: */
