@@ -7,8 +7,8 @@ type: :bugfix
 component: json_diff
 release: 
 reporter: Matej Cepl <mcepl@redhat.com>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2011-10-10 21:31:46.437278 Z
 references: []
 
@@ -18,3 +18,14 @@ log_events:
   - Matej Cepl <mcepl@redhat.com>
   - created
   - ""
+- - 2011-10-24 21:25:12.273479 Z
+  - Matej Cepl <mcepl@redhat.com>
+  - closed with disposition fixed
+  - |-
+    Fixed as part of larger first working version.
+    Programmatically fill excuded_attributes tuple, or add (even repeatedly)
+    -x parameter to the command line. So,
+    
+    json_diff.py -x spam old.json new.json
+    
+    Ignores all mentions of the horrendous stuff.
