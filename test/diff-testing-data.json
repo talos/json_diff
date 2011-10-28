@@ -1,54 +1,54 @@
 {
-    "update": {
+    "_update": {
         "tests": {
-            "update": {
+            "_update": {
                 "spec/ARB_shader_texture_lod/execution/arb_shader_texture_lod-texgrad": {
-                    "update": {
+                    "_update": {
                         "info": "Returncode: 1\n\nErrors:\n\n\nOutput:\nLeft: texture2D, Right: texture2DGradARB\nProbe at (4,2)\n  Left: 1.000000 0.000000 0.000000 1.000000\n  Right: 0.945098 0.890196 0.945098 1.000000\n"
                     }
                 }, 
                 "glean/fbo": {
-                    "update": {
+                    "_update": {
                         "info": "Returncode: 0\n\nErrors:\n\n\nOutput:\n----------------------------------------------------------------------\nfbo test: Test OpenGL Extension GL_EXT_framebuffer_object\n\nGL_EXT_framebuffer_object is supported\nGL_ARB_framebuffer_object is supported\n  (FBOTest::testRender2SingleTexture:648)GL_FRAMEBUFFER_UNSUPPORTED_EXT\n  (FBOTest::testRender2SingleTexture:648)GL_FRAMEBUFFER_UNSUPPORTED_EXT\n  (FBOTest::testRender2SingleTexture:648)GL_FRAMEBUFFER_UNSUPPORTED_EXT\n  (FBOTest::testRender2SingleTexture:648)GL_FRAMEBUFFER_UNSUPPORTED_EXT\nfbo:  NOTE perf[0] = 182.54 MB/s, which is using glCopyTexImage2D\nfbo:  NOTE perf[1] = 165.462 MB/s, which is using FBO\nfbo:  PASS rgba8, db, z24, s8, win+pmap, id 33\n\t8 tests passed, 0 tests failed.\n\n"
                     }
                 }, 
                 "glx/glx-pixmap-crosscheck": {
-                    "remove": {
+                    "_remove": {
                         "returncode": 0
                     }
                 }, 
                 "glean/pbo": {
-                    "update": {
+                    "_update": {
                         "info": "Returncode: 0\n\nErrors:\n\n\nOutput:\n----------------------------------------------------------------------\npbo test: Test OpenGL Extension GL_ARB_pixel_buffer_object\n\npbo:  PASS rgba8, db, z24, s8, win+pmap, id 33\n\t10 tests passed, 0 tests failed.\n\n"
                     }
                 }, 
                 "glx/glx-swap-singlebuffer": {
-                    "update": {
+                    "_update": {
                         "info": "Returncode: 1\n\nErrors:\nX Error of failed request:  BadDrawable (invalid Pixmap or Window parameter)\n  Major opcode of failed request:  137 (DRI2)\n  Minor opcode of failed request:  8 ()\n  Resource id in failed request:  0x9e00002\n  Serial number of failed request:  35\n  Current serial number in output stream:  35\n\n\nOutput:\n"
                     }
                 }, 
                 "glean/teapot": {
-                    "update": {
+                    "_update": {
                         "info": "Returncode: 0\n\nErrors:\n\n\nOutput:\n----------------------------------------------------------------------\nThis test simply displays a teapot, rotates it, and attempts to\ndetermine the frame/sec the pipeline can generate\n\nteapot:  PASS Teapots/Sec: 59.4814  rgba8, db, z24, s8, win+pmap, id 33\n\n"
                     }
                 }, 
                 "spec/!OpenGL 2.0/vertex-program-two-side enabled back2": {
-                    "update": {
+                    "_update": {
                         "info": "Returncode: 1\n\nErrors:\n\n\nOutput:\nWindow quadrants show:\n+-------------------------+------------------------+\n| front gl_Color          | back gl_Color          |\n+-------------------------+------------------------+\n| front gl_SecondaryColor | back gl_SecondaryColor |\n+-------------------------+------------------------+\nProbe at (50,0)\n  Expected: 0.000000 0.000000 0.250000 0.000000\n  Observed: 0.007843 0.007843 0.007843 0.007843\n"
                     }
                 }, 
                 "spec/glsl-1.10/execution/samplers/in-parameter-struct": {
-                    "update": {
+                    "_update": {
                         "info": "Returncode: -6\n\nErrors:\n\n\nOutput:\nir_dereference_variable @ 0x1247460 specifies undeclared variable `channel_expressions' @ 0x11d00e0\n"
                     }
                 }, 
                 "fbo/fbo-sys-blit": {
-                    "update": {
+                    "_update": {
                         "info": "Returncode: 1\n\nErrors:\n\n\nOutput:\nProbe at (64,64)\n  Expected: 0.000000 1.000000 0.000000\n  Observed: 0.325490 0.529412 0.823529\n"
                     }
                 }, 
                 "spec/glsl-1.10/execution/samplers/normal-parameter-struct": {
-                    "update": {
+                    "_update": {
                         "info": "Returncode: -6\n\nErrors:\n\n\nOutput:\nir_dereference_variable @ 0x1de33f0 specifies undeclared variable `channel_expressions' @ 0x1d6c230\n"
                     }
                 }

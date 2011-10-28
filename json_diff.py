@@ -2,12 +2,138 @@
 # -*- coding: utf-8 -*-
 """
 Script for comparing two objects
+
+Copyright (c) 2011, Red Hat Corp.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 import json
 from optparse import OptionParser
 import logging
 
+__author__ = "Matěj Cepl"
+__version__ = "0.1.0"
+
 logging.basicConfig(format='%(levelname)s:%(funcName)s:%(message)s', level=logging.INFO)
+
+STYLE_MAP = {
+    u"_append": "append_class",
+    u"_remove": "remove_class",
+    u"_update": "update_class"
+}
+
+
+LEVEL_INDENT = "&nbsp;"
+
+out_str_template = u"""
+<!DOCTYPE html>
+<html lang='en'>
+<meta charset="utf-8" />
+<title>%s</title>
+<style>
+td {
+  text-align: center;
+}
+.append_class {
+  color: green;
+}
+.remove_class {
+  color: red;
+}
+.update_class {
+  color: navy;
+}
+</style>
+<body>
+  <h1>%s</h1>
+  <table>
+  %s
+"""
+
+class HTMLFormatter(object):
+    
+    def __init__(self, diff_object):
+        self.diff = diff_object
+
+    def _generate_page(self, in_dict, title="json_diff result"):
+        out_str = out_str_template % (title, title,
+            self._format_dict(in_dict))
+        out_str += """
+            </table>
+              </body>
+            </html>
+        """
+        return out_str
+
+    @staticmethod
+    def _is_scalar(value):
+        return not isinstance(value, (list, tuple, dict))
+
+    def _is_leafnode(self, node):
+        # anything else than dict shouldn't happen here, so that would be
+        # pure error
+        assert(isinstance(node, dict))
+        # the following lines mean that it is an expression
+        out = True
+        for key in node:
+            if not self._is_scalar(node[key]):
+                out = False
+        return out
+
+    # doesn't have level and neither concept of it, much
+    def _format_dict(self, diff_dict, typch="unknown_change", level=0):
+        internal_keys = set(STYLE_MAP.keys())
+        level_str = ("<td>" + LEVEL_INDENT + "</td>") * level
+        out_str = ""
+        logging.debug("out_str = %s", out_str)
+
+        logging.debug("----------------------------------------------------------------")
+        logging.debug("diff_dict = %s", unicode(diff_dict))
+        logging.debug("level = %s", unicode(level))
+        logging.debug("diff_dict.keys() = %s", unicode(diff_dict.keys()))
+
+        for typechange in set(diff_dict.keys()) & internal_keys:
+            logging.debug("---- internal typechange in diff_dict.keys() = %s", typechange)
+            logging.debug("---- diff_dict[typechange] = %s", unicode(diff_dict[typechange]))
+            logging.debug("---- self._is_leafnode(diff_dict[typechange]) = %s",
+                self._is_leafnode(diff_dict[typechange]))
+            out_str += self._format_dict(diff_dict[typechange], typechange, level)
+
+        for variable in set(diff_dict.keys()) - internal_keys:
+            logging.debug("**** external variable in diff_dict.keys() = %s", variable)
+            logging.debug("**** diff_dict[variable] = %s", unicode(diff_dict[variable]))
+            logging.debug("**** self._is_scalar(diff_dict[variable]) = %s",
+                self._is_scalar(diff_dict[variable]))
+            if self._is_scalar(diff_dict[variable]):
+                out_str += ("<tr>\n  %s<td class='%s'>%s = %s</td>\n  </tr>\n" %
+                    (level_str, STYLE_MAP[typch], variable, unicode(diff_dict[variable])))
+                logging.debug("out_str = %s", out_str)
+            else:
+                out_str += self._format_dict(diff_dict[variable], None, level+1)
+
+        return out_str
+
+    
+    def __str__(self):
+        return self._generate_page(self.diff).encode("utf-8")
+
+class BadJSONError(ValueError):
+    pass
 
 class Comparator(object):
     """
@@ -15,59 +141,56 @@ class Comparator(object):
     """
     def __init__(self, fn1=None, fn2=None, excluded_attrs=()):
         if fn1:
-            self.obj1 = json.load(fn1)
+            try:
+                self.obj1 = json.load(fn1)
+            except (TypeError, OverflowError, ValueError) as exc:
+                raise BadJSONError("Cannot decode object from JSON.\n%s" % unicode(exc))
         if fn2:
-            self.obj2 = json.load(fn2)
+            try:
+                self.obj2 = json.load(fn2)
+            except (TypeError, OverflowError, ValueError) as exc:
+                raise BadJSONError("Cannot decode object from JSON\n%s" % unicode(exc))
         self.excluded_attributes = excluded_attrs
-        if (fn1 and fn2):
-            logging.debug("self.obj1 = %s\nself.obj2 = %s\nself.excluded_attrs = %s", \
-                          (self.obj1, self.obj2, self.excluded_attributes))
 
     @staticmethod
-    def _get_keys(obj):
-        """
-        Getter for the current object's keys.
-        """
-        out = set()
-        for key in obj.keys():
-            out.add(key)
-        return out
-    
-    @staticmethod
-    def _is_scalar(value):
+    def is_scalar(value):
         """
         Primitive version, relying on the fact that JSON cannot
         contain any more complicated data structures.
         """
         return not isinstance(value, (list, tuple, dict))
-
+    
     def _compare_arrays(self, old_arr, new_arr):
+        """
+        simpler version of compare_dicts; just an internal method, becase
+        it could never be called from outside.
+        """
         inters = min(old_arr, new_arr)
 
         result = {
-            u"append": {},
-            u"remove": {},
-            u"update": {}
+            "_append": {},
+            "_remove": {},
+            "_update": {}
         }        
         for idx in range(len(inters)):
             # changed objects, new value is new_arr
             if (type(old_arr[idx]) != type(new_arr[idx])):
-                result['update'][idx] = new_arr[idx]
+                result[u'_update'][idx] = new_arr[idx]
             # another simple variant ... scalars
-            elif (self._is_scalar(old_arr)):
+            elif (self.is_scalar(old_arr)):
                 if old_arr[idx] != new_arr[idx]:
-                    result['update'][idx] = new_arr[idx]
+                    result[u'_update'][idx] = new_arr[idx]
             # recursive arrays
             elif (isinstance(old_arr[idx], list)):
-                res_arr = self._compare_arrays(old_arr[idx], \
+                res_arr = self._compare_arrays(old_arr[idx],
                     new_arr[idx])
                 if (len(res_arr) > 0):
-                    result['update'][idx] = res_arr
+                    result[u'_update'][idx] = res_arr
             # and now nested dicts
             elif isinstance(old_arr[idx], dict):
                 res_dict = self.compare_dicts(old_arr[idx], new_arr[idx])
                 if (len(res_dict) > 0):
-                    result['update'][idx] = res_dict
+                    result[u'_update'][idx] = res_dict
     
         # Clear out unused inters in result
         out_result = {}
@@ -89,16 +212,16 @@ class Comparator(object):
         old_keys = set()
         new_keys = set()
         if old_obj and len(old_obj) > 0:
-            old_keys = self._get_keys(old_obj)
+            old_keys = set(old_obj.keys())
         if new_obj and len(new_obj) > 0:
-            new_keys = self._get_keys(new_obj)
+            new_keys = set(new_obj.keys())
 
         keys = old_keys | new_keys
 
         result = {
-            u"append": {},
-            u"remove": {},
-            u"update": {}
+            "_append": {},
+            "_remove": {},
+            "_update": {}
         }        
         for name in keys:
             # Explicitly excluded arguments
@@ -106,35 +229,35 @@ class Comparator(object):
                 continue
             # old_obj is missing
             if name not in old_obj:
-                result['append'][name] = new_obj[name]
+                result[u'_append'][name] = new_obj[name]
             # new_obj is missing
             elif name not in new_obj:
-                result['remove'][name] = old_obj[name]
+                result[u'_remove'][name] = old_obj[name]
             # changed objects, new value is new_obj
             elif (type(old_obj[name]) != type(new_obj[name])):
-                result['update'][name] = new_obj[name]
+                result[u'_update'][name] = new_obj[name]
             # last simple variant ... scalars
-            elif (self._is_scalar(old_obj[name])):
+            elif (self.is_scalar(old_obj[name])):
                 if old_obj[name] != new_obj[name]:
-                    result['update'][name] = new_obj[name]
+                    result[u'_update'][name] = new_obj[name]
             # now arrays
             elif (isinstance(old_obj[name], list)):
-                res_arr = self._compare_arrays(old_obj[name], \
+                res_arr = self._compare_arrays(old_obj[name],
                     new_obj[name])
                 if (len(res_arr) > 0):
-                    result['update'][name] = res_arr
+                    result[u'_update'][name] = res_arr
             # and now nested dicts
             elif isinstance(old_obj[name], dict):
                 res_dict = self.compare_dicts(old_obj[name], new_obj[name])
                 if (len(res_dict) > 0):
-                    result['update'][name] = res_dict
+                    result[u'_update'][name] = res_dict
     
         # Clear out unused keys in result
         out_result = {}
         for key in result:
             if len(result[key]) > 0:
                 out_result[key] = result[key]
-        
+
         return out_result
 
 
@@ -144,11 +267,18 @@ if __name__ == "__main__":
     parser.add_option("-x", "--exclude",
                   action="append", dest="exclude", metavar="ATTR", default=[],
                   help="attributes which should be ignored when comparing")
+    parser.add_option("-H", "--HTML",
+                  action="store_true", dest="HTMLoutput", metavar="BOOL", default=False,
+                  help="program should output to HTML report")
     (options, args) = parser.parse_args()
-    logging.debug("options = %s", str(options))
-    logging.debug("args = %s", str(args))
+
     if len(args) != 2:
         parser.error("Script requires two positional arguments, names for old and new JSON file.")
     
     diff = Comparator(file(args[0]), file(args[1]), options.exclude)
-    print json.dumps(diff.compare_dicts(), indent=4, ensure_ascii=False)
+    if options.HTMLoutput:
+        diff_res = diff.compare_dicts()
+        logging.debug("diff_res:\n%s", json.dumps(diff_res, indent=True))
+        print HTMLFormatter(diff_res)
+    else:
+        print json.dumps(diff.compare_dicts(), indent=4, ensure_ascii=False).encode("utf-8")

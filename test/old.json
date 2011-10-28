@@ -1,7 +1,7 @@
 {
     "a": 1,
     "b": 2,
-    "son": {
-        "name": "Janošek"
+    "children": {
+        "son": "Janošek"
     }
 }

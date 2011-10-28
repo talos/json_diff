@@ -1,7 +1,8 @@
 {
     "a": 2,
     "c": 3,
-    "daughter": {
-        "name": "Maruška"
+    "children": {
+        "son": "Ivánek",
+        "daughter": "Maruška"
     }
 }
