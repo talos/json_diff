@@ -2,6 +2,7 @@
 """
 PyUnit unit tests
 """
+from __future__ import division, absolute_import
 import unittest
 import json
 import json_diff
