@@ -1,0 +1,22 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: eliminate argparse
+desc: ""
+type: :bugfix
+component: json_diff
+release: 
+reporter: Matej Cepl <mcepl@redhat.com>
+status: :closed
+disposition: :fixed
+creation_time: 2011-11-16 11:09:26.710658 Z
+references: []
+
+id: a9e842efd5346c069a8f4f7780408556586eca47
+log_events: 
+- - 2011-11-16 11:09:40.591262 Z
+  - Matej Cepl <mcepl@redhat.com>
+  - created
+  - We don't have argparse in python 2.6 and it is just a waste to use it.
+- - 2011-11-16 12:10:05.602830 Z
+  - Matej Cepl <mcepl@redhat.com>
+  - closed with disposition fixed
+  - done.

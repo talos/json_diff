@@ -24,8 +24,8 @@ type: :bugfix
 component: json_diff
 release: 
 reporter: Matej Cepl <mcepl@redhat.com>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2011-11-07 09:58:56.794804 Z
 references: []
 
@@ -34,4 +34,8 @@ log_events:
 - - 2011-11-07 09:58:58.230693 Z
   - Matej Cepl <mcepl@redhat.com>
   - created
+  - ""
+- - 2011-11-08 18:11:14.760985 Z
+  - Matej Cepl <mcepl@redhat.com>
+  - closed with disposition fixed
   - ""

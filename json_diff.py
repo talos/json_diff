@@ -22,10 +22,12 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
-from __future__ import division, absolute_import
+from __future__ import division, absolute_import, print_function
 import json
 import logging
-import argparse
+import odict
+
+from optparse import OptionParser
 
 __author__ = "Matěj Cepl"
 __version__ = "0.1.0"
@@ -67,7 +69,7 @@ td {
 """
 
 class HTMLFormatter(object):
-    
+
     def __init__(self, diff_object):
         self.diff = diff_object
 
@@ -128,7 +130,6 @@ class HTMLFormatter(object):
 
         return out_str.strip()
 
-    
     def __str__(self):
         return self._generate_page(self.diff).encode("utf-8")
 
@@ -262,22 +263,27 @@ class Comparator(object):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Generates diff between two JSON files.")
-    parser.add_argument("filenames", action="append", nargs=2,
-                  metavar="FILENAME", help="names of the old and new JSON files")
-    parser.add_argument("-x", "--exclude",
-                  action="append", dest="exclude", default=[],
+    usage = "usage: %prog [options] old.json new.json"
+    description = "Generates diff between two JSON files."
+    parser = OptionParser(usage=usage)
+    parser.add_option("-x", "--exclude",
+                  action="append", dest="exclude", metavar="ATTR", default=[],
                   help="attributes which should be ignored when comparing")
-    parser.add_argument("-H", "--HTML",
-                  action="store_true", dest="HTMLoutput", default=False,
+    parser.add_option("-i", "--include",
+                  action="append", dest="include", metavar="ATTR", default=[],
+                  help="attributes which should be exclusively used when comparing")
+    parser.add_option("-H", "--HTML",
+                  action="store_true", dest="HTMLoutput", metavar="BOOL", default=False,
                   help="program should output to HTML report")
-    parser.add_argument('--version', action='version', version='%(prog)s 0.1.1')
-    options = parser.parse_args()
+    (options, args) = parser.parse_args()
 
-    diff = Comparator(file(options.filenames[0][0]), file(options.filenames[0][1]), options.exclude)
+    if len(args) != 2:
+        parser.error("Script requires two positional arguments, names for old and new JSON file.")
+
+    diff = Comparator(file(args[0]), file(args[1]), options.exclude, options.include)
     if options.HTMLoutput:
         diff_res = diff.compare_dicts()
         logging.debug("diff_res:\n%s", json.dumps(diff_res, indent=True))
-        print HTMLFormatter(diff_res)
+        print(HTMLFormatter(diff_res))
     else:
-        print json.dumps(diff.compare_dicts(), indent=4, ensure_ascii=False).encode("utf-8")
+        print(json.dumps(diff.compare_dicts(), indent=4, ensure_ascii=False).encode("utf-8"))
