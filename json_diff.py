@@ -25,21 +25,19 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 from __future__ import division, absolute_import, print_function
 import json
 import logging
-import odict
-
 from optparse import OptionParser
 
 __author__ = "Matěj Cepl"
 __version__ = "0.1.0"
 
-logging.basicConfig(format='%(levelname)s:%(funcName)s:%(message)s', level=logging.INFO)
+logging.basicConfig(format='%(levelname)s:%(funcName)s:%(message)s', level=logging.DEBUG)
 
 STYLE_MAP = {
     u"_append": "append_class",
     u"_remove": "remove_class",
     u"_update": "update_class"
 }
-
+INTERNAL_KEYS = set(STYLE_MAP.keys())
 
 LEVEL_INDENT = "&nbsp;"
 
@@ -99,7 +97,6 @@ class HTMLFormatter(object):
 
     # doesn't have level and neither concept of it, much
     def _format_dict(self, diff_dict, typch="unknown_change", level=0):
-        internal_keys = set(STYLE_MAP.keys())
         level_str = ("<td>" + LEVEL_INDENT + "</td>") * level
         out_str = ""
         logging.debug("out_str = %s", out_str)
@@ -109,14 +106,14 @@ class HTMLFormatter(object):
         logging.debug("level = %s", unicode(level))
         logging.debug("diff_dict.keys() = %s", unicode(diff_dict.keys()))
 
-        for typechange in set(diff_dict.keys()) & internal_keys:
+        for typechange in set(diff_dict.keys()) & INTERNAL_KEYS:
             logging.debug("---- internal typechange in diff_dict.keys() = %s", typechange)
             logging.debug("---- diff_dict[typechange] = %s", unicode(diff_dict[typechange]))
             logging.debug("---- self._is_leafnode(diff_dict[typechange]) = %s",
                 self._is_leafnode(diff_dict[typechange]))
             out_str += self._format_dict(diff_dict[typechange], typechange, level)
 
-        for variable in set(diff_dict.keys()) - internal_keys:
+        for variable in set(diff_dict.keys()) - INTERNAL_KEYS:
             logging.debug("**** external variable in diff_dict.keys() = %s", variable)
             logging.debug("**** diff_dict[variable] = %s", unicode(diff_dict[variable]))
             logging.debug("**** self._is_scalar(diff_dict[variable]) = %s",
