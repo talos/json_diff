@@ -24,6 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 from __future__ import division, absolute_import, print_function
 import json
+import odict
 import logging
 from optparse import OptionParser
 
@@ -76,28 +77,33 @@ class HTMLFormatter(object):
             self._format_dict(in_dict))
         out_str += """</table>
   </body>
-</html>
-        """
+</html>"""
         return out_str
 
     @staticmethod
     def _is_scalar(value):
         return not isinstance(value, (list, tuple, dict))
 
-    def _is_leafnode(self, node):
-        # anything else than dict shouldn't happen here, so that would be
-        # pure error
-        assert(isinstance(node, dict))
-        # the following lines mean that it is an expression
-        out = True
-        for key in node:
-            if not self._is_scalar(node[key]):
-                out = False
-        return out
+    def _format_item(self, item, index, typch, level=0):
+        level_str = ("<td>" + LEVEL_INDENT + "</td>") * level
+
+        if self._is_scalar(item):
+            out_str = ("<tr>\n  %s<td class='%s'>%s = %s</td>\n  </tr>\n" %
+                (level_str, STYLE_MAP[typch], index, unicode(item)))
+        elif isinstance(item, (list, tuple)):
+            out_str = self._format_array(item, typch, level+1)
+        else:
+            out_str = self._format_dict(item, typch, level+1)
+        return out_str.strip()
+
+    def _format_array(self, diff_array, typch, level=0):
+        out_str = ""
+        for index in range(len(diff_array)):
+            out_str += self._format_item(diff_array[index], index, typch, level)
+        return out_str.strip()
 
     # doesn't have level and neither concept of it, much
     def _format_dict(self, diff_dict, typch="unknown_change", level=0):
-        level_str = ("<td>" + LEVEL_INDENT + "</td>") * level
         out_str = ""
         logging.debug("out_str = %s", out_str)
 
@@ -106,24 +112,13 @@ class HTMLFormatter(object):
         logging.debug("level = %s", unicode(level))
         logging.debug("diff_dict.keys() = %s", unicode(diff_dict.keys()))
 
+        # For all STYLE_MAP keys which are present in diff_dict
         for typechange in set(diff_dict.keys()) & INTERNAL_KEYS:
-            logging.debug("---- internal typechange in diff_dict.keys() = %s", typechange)
-            logging.debug("---- diff_dict[typechange] = %s", unicode(diff_dict[typechange]))
-            logging.debug("---- self._is_leafnode(diff_dict[typechange]) = %s",
-                self._is_leafnode(diff_dict[typechange]))
             out_str += self._format_dict(diff_dict[typechange], typechange, level)
 
+        # For all other non-internal keys
         for variable in set(diff_dict.keys()) - INTERNAL_KEYS:
-            logging.debug("**** external variable in diff_dict.keys() = %s", variable)
-            logging.debug("**** diff_dict[variable] = %s", unicode(diff_dict[variable]))
-            logging.debug("**** self._is_scalar(diff_dict[variable]) = %s",
-                self._is_scalar(diff_dict[variable]))
-            if self._is_scalar(diff_dict[variable]):
-                out_str += ("<tr>\n  %s<td class='%s'>%s = %s</td>\n  </tr>\n" %
-                    (level_str, STYLE_MAP[typch], variable, unicode(diff_dict[variable])))
-                logging.debug("out_str = %s", out_str)
-            else:
-                out_str += self._format_dict(diff_dict[variable], None, level+1)
+            out_str += self._format_item(diff_dict[variable], variable, typch, level)
 
         return out_str.strip()
 
@@ -135,20 +130,23 @@ class BadJSONError(ValueError):
 
 class Comparator(object):
     """
-    Main workhorse, the object itself 
+    Main workhorse, the object itself
     """
-    def __init__(self, fn1=None, fn2=None, excluded_attrs=()):
+    def __init__(self, fn1=None, fn2=None, excluded_attrs=(), included_attrs=()):
         if fn1:
             try:
-                self.obj1 = json.load(fn1)
+#                self.obj1 = json.load(fn1)
+                self.obj1 = odict.odict(json.load(fn1))
             except (TypeError, OverflowError, ValueError) as exc:
                 raise BadJSONError("Cannot decode object from JSON.\n%s" % unicode(exc))
         if fn2:
             try:
-                self.obj2 = json.load(fn2)
+#                self.obj2 = json.load(fn2)
+                self.obj2 = odict.odict(json.load(fn2))
             except (TypeError, OverflowError, ValueError) as exc:
                 raise BadJSONError("Cannot decode object from JSON\n%s" % unicode(exc))
         self.excluded_attributes = excluded_attrs
+        self.included_attributes = included_attrs
 
     @staticmethod
     def is_scalar(value):
@@ -157,20 +155,24 @@ class Comparator(object):
         contain any more complicated data structures.
         """
         return not isinstance(value, (list, tuple, dict))
-    
+
     def _compare_arrays(self, old_arr, new_arr):
         """
         simpler version of compare_dicts; just an internal method, becase
         it could never be called from outside.
-        """
-        inters = min(old_arr, new_arr)
 
-        result = {
-            "_append": {},
-            "_remove": {},
-            "_update": {}
-        }        
-        for idx in range(len(inters)):
+        We have it guaranteed that both new_arr and old_arr are of type list.
+        """
+#        for idx in range(len(inters)):
+        inters = min(len(old_arr), len(new_arr)) # this is the smaller length
+        # max(listA, listB) compares VALUES of items in list, not their length
+
+        result = odict.odict({
+            u"_append": {},
+            u"_remove": {},
+            u"_update": {}
+        })
+        for idx in range(inters):
             # changed objects, new value is new_arr
             if (type(old_arr[idx]) != type(new_arr[idx])):
                 result[u'_update'][idx] = new_arr[idx]
@@ -189,13 +191,21 @@ class Comparator(object):
                 res_dict = self.compare_dicts(old_arr[idx], new_arr[idx])
                 if (len(res_dict) > 0):
                     result[u'_update'][idx] = res_dict
-    
-        # Clear out unused inters in result
-        out_result = {}
+
+        # the rest of the larger array
+        if (inters == len(old_arr)):
+            for idx in range(inters, len(new_arr)):
+                result[u'_append'][idx] = new_arr[idx]
+        else:
+            for idx in range(inters, len(old_arr)):
+                result[u'_remove'][idx] = old_arr[idx]
+
+        # Clear out unused keys in result
+        out_result = odict.odict({})
         for key in result:
             if len(result[key]) > 0:
                 out_result[key] = result[key]
-        
+
         return out_result
 
     def compare_dicts(self, old_obj=None, new_obj=None):
@@ -203,7 +213,7 @@ class Comparator(object):
         The real workhorse
         """
         if not old_obj and hasattr(self, "obj1"):
-            old_obj = self.obj1 
+            old_obj = self.obj1
         if not new_obj and hasattr(self, "obj2"):
             new_obj = self.obj2
 
@@ -216,14 +226,17 @@ class Comparator(object):
 
         keys = old_keys | new_keys
 
-        result = {
-            "_append": {},
-            "_remove": {},
-            "_update": {}
-        }        
+        result = odict.odict({
+            u"_append": {},
+            u"_remove": {},
+            u"_update": {}
+        })
         for name in keys:
             # Explicitly excluded arguments
-            if (name in self.excluded_attributes):
+            logging.debug("name = %s (inc = %s, excl = %s)", name,
+                            unicode(self.included_attributes), unicode(self.excluded_attributes))
+            if ((self.included_attributes and (name not in self.included_attributes)) or
+                    (name in self.excluded_attributes)):
                 continue
             # old_obj is missing
             if name not in old_obj:
@@ -238,7 +251,8 @@ class Comparator(object):
             elif (self.is_scalar(old_obj[name])):
                 if old_obj[name] != new_obj[name]:
                     result[u'_update'][name] = new_obj[name]
-            # now arrays
+            # now arrays (we can be sure, that both old_obj and
+            # new_obj are of the same type)
             elif (isinstance(old_obj[name], list)):
                 res_arr = self._compare_arrays(old_obj[name],
                     new_obj[name])
@@ -249,9 +263,9 @@ class Comparator(object):
                 res_dict = self.compare_dicts(old_obj[name], new_obj[name])
                 if (len(res_dict) > 0):
                     result[u'_update'][name] = res_dict
-    
+
         # Clear out unused keys in result
-        out_result = {}
+        out_result = odict.odict({})
         for key in result:
             if len(result[key]) > 0:
                 out_result[key] = result[key]
@@ -283,4 +297,6 @@ if __name__ == "__main__":
         logging.debug("diff_res:\n%s", json.dumps(diff_res, indent=True))
         print(HTMLFormatter(diff_res))
     else:
-        print(json.dumps(diff.compare_dicts(), indent=4, ensure_ascii=False).encode("utf-8"))
+        outs = json.dumps(diff.compare_dicts(), indent=4, ensure_ascii=False).encode("utf-8")
+        outs = "\n".join([line for line in outs.split("\n")])
+        print(outs)

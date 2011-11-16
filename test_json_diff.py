@@ -39,6 +39,28 @@ SIMPLE_DIFF =  u"""
 }
 """
 
+SIMPLE_ARRAY_OLD = u"""
+{
+   "a": [ 1 ]
+}
+"""
+
+SIMPLE_ARRAY_NEW = u"""
+{
+   "a": [ 1, 2 ]
+}
+"""
+
+SIMPLE_ARRAY_DIFF = u"""
+{
+    "_append": {
+        "a": {
+            "1": 2
+        }
+    }
+}
+"""
+
 NESTED_OLD = u"""
 {
     "a": 1,
@@ -79,6 +101,44 @@ NESTED_DIFF = u"""
 }
 """
 
+ARRAY_OLD = u"""
+{
+    "a": 1,
+    "b": 2,
+    "children": [
+        "Pepíček", "Anička", "Maruška"
+    ]
+}
+"""
+
+ARRAY_NEW = u"""
+{
+    "a": 1,
+    "children": [
+        "Pepíček", "Tonička", "Maruška"
+    ],
+    "c": 3
+}
+"""
+
+ARRAY_DIFF = """
+{
+    "_remove": {
+        "b": 2
+    },
+    "_append": {
+        "c": 3
+    },
+    "_update": {
+        "children": [
+            "Pepíček",
+            "Tonička",
+            "Maruška"
+        ]
+    }
+}
+"""
+
 class TestHappyPath(unittest.TestCase):
     def test_empty(self):
         diffator = json_diff.Comparator({}, {})
@@ -110,7 +170,7 @@ class TestHappyPath(unittest.TestCase):
         self.assertEqual(diff, expected, "Nested objects diff. " +
                          "\n\nexpected = %s\n\nobserved = %s" %
                          (str(expected), str(diff)))
-    
+
     def test_nested_formatted(self):
         diffator = json_diff.Comparator(open("test/old.json"), open("test/new.json"))
         diff = "\n".join([line.strip() \
@@ -119,15 +179,6 @@ class TestHappyPath(unittest.TestCase):
         self.assertEqual(diff, expected, "Simply nested objects (from file) diff formatted as HTML." +
                          "\n\nexpected = %s\n\nobserved = %s" %
                          (expected, diff))
-    
-    def test_large_with_exclusions(self):
-        diffator = json_diff.Comparator(open("test/old-testing-data.json"),
-                    open("test/new-testing-data.json"), ('command', 'time'))
-        diff = diffator.compare_dicts()
-        expected = json.load(open("test/diff-testing-data.json"))
-        self.assertEqual(diff, expected, "Large objects with exclusions diff." +
-                         "\n\nexpected = %s\n\nobserved = %s" %
-                         (str(expected), str(diff)))
 
 
 NO_JSON_OLD = u"""
