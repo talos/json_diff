@@ -22,27 +22,26 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
-from __future__ import division, absolute_import, print_function
+from __future__ import division, absolute_import, print_function, unicode_literals
 import json
-import odict
 import logging
 from optparse import OptionParser
 
 __author__ = "Matěj Cepl"
 __version__ = "0.1.0"
 
-logging.basicConfig(format='%(levelname)s:%(funcName)s:%(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(levelname)s:%(funcName)s:%(message)s', level=logging.INFO)
 
 STYLE_MAP = {
-    u"_append": "append_class",
-    u"_remove": "remove_class",
-    u"_update": "update_class"
+    "_append": "append_class",
+    "_remove": "remove_class",
+    "_update": "update_class"
 }
 INTERNAL_KEYS = set(STYLE_MAP.keys())
 
 LEVEL_INDENT = "&nbsp;"
 
-out_str_template = u"""
+out_str_template = """
 <!DOCTYPE html>
 <html lang='en'>
 <meta charset="utf-8" />
@@ -67,6 +66,14 @@ td {
   %s
 """
 
+def is_scalar(value):
+    """
+    Primitive version, relying on the fact that JSON cannot
+    contain any more complicated data structures.
+    """
+    logging.debug("? = %s", not isinstance(value, (list, tuple, dict)))
+    return not isinstance(value, (list, tuple, dict))
+
 class HTMLFormatter(object):
 
     def __init__(self, diff_object):
@@ -80,14 +87,10 @@ class HTMLFormatter(object):
 </html>"""
         return out_str
 
-    @staticmethod
-    def _is_scalar(value):
-        return not isinstance(value, (list, tuple, dict))
-
     def _format_item(self, item, index, typch, level=0):
         level_str = ("<td>" + LEVEL_INDENT + "</td>") * level
 
-        if self._is_scalar(item):
+        if is_scalar(item):
             out_str = ("<tr>\n  %s<td class='%s'>%s = %s</td>\n  </tr>\n" %
                 (level_str, STYLE_MAP[typch], index, unicode(item)))
         elif isinstance(item, (list, tuple)):
@@ -123,7 +126,7 @@ class HTMLFormatter(object):
         return out_str.strip()
 
     def __str__(self):
-        return self._generate_page(self.diff).encode("utf-8")
+        return self._generate_page(self.diff)
 
 class BadJSONError(ValueError):
     pass
@@ -133,28 +136,43 @@ class Comparator(object):
     Main workhorse, the object itself
     """
     def __init__(self, fn1=None, fn2=None, excluded_attrs=(), included_attrs=()):
+        self.obj1 = None
+        self.obj2 = None
         if fn1:
             try:
-#                self.obj1 = json.load(fn1)
-                self.obj1 = odict.odict(json.load(fn1))
+                self.obj1 = json.load(fn1)
             except (TypeError, OverflowError, ValueError) as exc:
                 raise BadJSONError("Cannot decode object from JSON.\n%s" % unicode(exc))
         if fn2:
             try:
-#                self.obj2 = json.load(fn2)
-                self.obj2 = odict.odict(json.load(fn2))
+                self.obj2 = json.load(fn2)
             except (TypeError, OverflowError, ValueError) as exc:
                 raise BadJSONError("Cannot decode object from JSON\n%s" % unicode(exc))
         self.excluded_attributes = excluded_attrs
         self.included_attributes = included_attrs
+        if self.obj1:
+            logging.debug("self.obj1:\n%s\n", json.dumps(self.obj1, indent=4))
+        if self.obj2:
+            logging.debug("self.obj2:\n%s\n", json.dumps(self.obj2, indent=4))
 
-    @staticmethod
-    def is_scalar(value):
+    def _compare_scalars(self, old, new, name=None):
         """
-        Primitive version, relying on the fact that JSON cannot
-        contain any more complicated data structures.
+        Be careful with the result of this function. Negative answer from this function
+        is really None, not False, so deciding based on the return value like in
+        
+        if self._compare_scalars(...):
+        
+        leads to wrong answer (it should be if self._compare_scalars(...) is not None:)
         """
-        return not isinstance(value, (list, tuple, dict))
+        # Explicitly excluded arguments
+        logging.debug("Comparing scalars %s and %s", old, new)
+        if ((self.included_attributes and (name not in self.included_attributes)) or
+                (name in self.excluded_attributes)):
+            return None
+        elif old != new:
+            return new
+        else:
+            return None
 
     def _compare_arrays(self, old_arr, new_arr):
         """
@@ -163,49 +181,52 @@ class Comparator(object):
 
         We have it guaranteed that both new_arr and old_arr are of type list.
         """
-#        for idx in range(len(inters)):
         inters = min(len(old_arr), len(new_arr)) # this is the smaller length
-        # max(listA, listB) compares VALUES of items in list, not their length
 
-        result = odict.odict({
-            u"_append": {},
-            u"_remove": {},
-            u"_update": {}
-        })
+        result = {
+            "_append": {},
+            "_remove": {},
+            "_update": {}
+        }
         for idx in range(inters):
+            logging.debug("idx = %s, old_arr[idx] = %s, new_arr[idx] = %s",
+                idx, old_arr[idx], new_arr[idx])
             # changed objects, new value is new_arr
             if (type(old_arr[idx]) != type(new_arr[idx])):
-                result[u'_update'][idx] = new_arr[idx]
+                result['_update'][idx] = new_arr[idx]
             # another simple variant ... scalars
-            elif (self.is_scalar(old_arr)):
-                if old_arr[idx] != new_arr[idx]:
-                    result[u'_update'][idx] = new_arr[idx]
+            elif (is_scalar(old_arr[idx])):
+                scalar_diff = self._compare_scalars(old_arr[idx], new_arr[idx])
+                if scalar_diff is not None:
+                    result['_update'][idx] = scalar_diff
             # recursive arrays
             elif (isinstance(old_arr[idx], list)):
                 res_arr = self._compare_arrays(old_arr[idx],
                     new_arr[idx])
                 if (len(res_arr) > 0):
-                    result[u'_update'][idx] = res_arr
+                    result['_update'][idx] = res_arr
             # and now nested dicts
             elif isinstance(old_arr[idx], dict):
                 res_dict = self.compare_dicts(old_arr[idx], new_arr[idx])
                 if (len(res_dict) > 0):
-                    result[u'_update'][idx] = res_dict
+                    result['_update'][idx] = res_dict
 
         # the rest of the larger array
         if (inters == len(old_arr)):
             for idx in range(inters, len(new_arr)):
-                result[u'_append'][idx] = new_arr[idx]
+                result['_append'][idx] = new_arr[idx]
         else:
             for idx in range(inters, len(old_arr)):
-                result[u'_remove'][idx] = old_arr[idx]
+                result['_remove'][idx] = old_arr[idx]
 
         # Clear out unused keys in result
-        out_result = odict.odict({})
+        out_result = {}
         for key in result:
             if len(result[key]) > 0:
                 out_result[key] = result[key]
 
+        logging.debug("out_result = %s",
+            json.dumps(out_result, indent=4))
         return out_result
 
     def compare_dicts(self, old_obj=None, new_obj=None):
@@ -226,46 +247,42 @@ class Comparator(object):
 
         keys = old_keys | new_keys
 
-        result = odict.odict({
-            u"_append": {},
-            u"_remove": {},
-            u"_update": {}
-        })
+        result = {
+            "_append": {},
+            "_remove": {},
+            "_update": {}
+        }
         for name in keys:
-            # Explicitly excluded arguments
-            logging.debug("name = %s (inc = %s, excl = %s)", name,
-                            unicode(self.included_attributes), unicode(self.excluded_attributes))
-            if ((self.included_attributes and (name not in self.included_attributes)) or
-                    (name in self.excluded_attributes)):
-                continue
             # old_obj is missing
             if name not in old_obj:
-                result[u'_append'][name] = new_obj[name]
+                result['_append'][name] = new_obj[name]
             # new_obj is missing
             elif name not in new_obj:
-                result[u'_remove'][name] = old_obj[name]
+                result['_remove'][name] = old_obj[name]
             # changed objects, new value is new_obj
             elif (type(old_obj[name]) != type(new_obj[name])):
-                result[u'_update'][name] = new_obj[name]
+                result['_update'][name] = new_obj[name]
             # last simple variant ... scalars
-            elif (self.is_scalar(old_obj[name])):
-                if old_obj[name] != new_obj[name]:
-                    result[u'_update'][name] = new_obj[name]
+            elif (is_scalar(old_obj[name])):
+                # Explicitly excluded arguments
+                res_scal = self._compare_scalars(old_obj[name], new_obj[name], name)
+                if res_scal is not None:
+                    result['_update'][name] = res_scal
             # now arrays (we can be sure, that both old_obj and
             # new_obj are of the same type)
             elif (isinstance(old_obj[name], list)):
                 res_arr = self._compare_arrays(old_obj[name],
                     new_obj[name])
                 if (len(res_arr) > 0):
-                    result[u'_update'][name] = res_arr
+                    result['_update'][name] = res_arr
             # and now nested dicts
             elif isinstance(old_obj[name], dict):
                 res_dict = self.compare_dicts(old_obj[name], new_obj[name])
                 if (len(res_dict) > 0):
-                    result[u'_update'][name] = res_dict
+                    result['_update'][name] = res_dict
 
         # Clear out unused keys in result
-        out_result = odict.odict({})
+        out_result = {}
         for key in result:
             if len(result[key]) > 0:
                 out_result[key] = result[key]

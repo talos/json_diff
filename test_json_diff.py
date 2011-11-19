@@ -2,13 +2,14 @@
 """
 PyUnit unit tests
 """
-from __future__ import division, absolute_import
+from __future__ import division, absolute_import, unicode_literals
 import unittest
 import json
 import json_diff
-from StringIO import StringIO
+from io import StringIO
+import codecs
 
-SIMPLE_OLD = u"""
+SIMPLE_OLD = """
 {
     "a": 1,
     "b": true,
@@ -16,7 +17,7 @@ SIMPLE_OLD = u"""
 }
 """
 
-SIMPLE_NEW = u"""
+SIMPLE_NEW = """
 {
     "b": false,
     "c": "Maruška",
@@ -24,7 +25,7 @@ SIMPLE_NEW = u"""
 }
 """
 
-SIMPLE_DIFF =  u"""
+SIMPLE_DIFF =  """
 {
     "_append": {
         "d": "přidáno"
@@ -39,29 +40,67 @@ SIMPLE_DIFF =  u"""
 }
 """
 
-SIMPLE_ARRAY_OLD = u"""
+SIMPLE_DIFF_HTML="""
+<!DOCTYPE html>
+<html lang='en'>
+<meta charset="utf-8" />
+<title>json_diff result</title>
+<style>
+td {
+text-align: center;
+}
+.append_class {
+color: green;
+}
+.remove_class {
+color: red;
+}
+.update_class {
+color: navy;
+}
+</style>
+<body>
+<h1>json_diff result</h1>
+<table>
+<tr>
+<td class='remove_class'>a = 1</td>
+</tr><tr>
+<td class='update_class'>c = Maruška</td>
+</tr><tr>
+<td class='update_class'>b = False</td>
+</tr><tr>
+<td class='append_class'>d = přidáno</td>
+</tr>
+</table>
+</body>
+</html>
+"""
+
+SIMPLE_ARRAY_OLD = """
 {
    "a": [ 1 ]
 }
 """
 
-SIMPLE_ARRAY_NEW = u"""
+SIMPLE_ARRAY_NEW = """
 {
    "a": [ 1, 2 ]
 }
 """
 
-SIMPLE_ARRAY_DIFF = u"""
+SIMPLE_ARRAY_DIFF = """
 {
-    "_append": {
+    "_update": {
         "a": {
-            "1": 2
+            "_append": {
+                "1": 2
+            }
         }
     }
 }
 """
 
-NESTED_OLD = u"""
+NESTED_OLD = """
 {
     "a": 1,
     "b": 2,
@@ -71,7 +110,7 @@ NESTED_OLD = u"""
 }
 """
 
-NESTED_NEW = u"""
+NESTED_NEW = """
 {
     "a": 2,
     "c": 3,
@@ -81,7 +120,7 @@ NESTED_NEW = u"""
 }
 """
 
-NESTED_DIFF = u"""
+NESTED_DIFF = """
 {
     "_append": {
         "c": 3,
@@ -100,8 +139,21 @@ NESTED_DIFF = u"""
     }
 }
 """
+NESTED_DIFF_EXCL = """
+{
+    "_append": {
+        "c": 3
+    },
+    "_remove": {
+        "b": 2
+    },
+    "_update": {
+        "a": 2
+    }
+}
+"""
 
-ARRAY_OLD = u"""
+ARRAY_OLD = """
 {
     "a": 1,
     "b": 2,
@@ -111,7 +163,7 @@ ARRAY_OLD = u"""
 }
 """
 
-ARRAY_NEW = u"""
+ARRAY_NEW = """
 {
     "a": 1,
     "children": [
@@ -140,52 +192,70 @@ ARRAY_DIFF = """
 """
 
 class TestHappyPath(unittest.TestCase):
+    def _run_test(self, oldf, newf, difff, msg="", inc=(), exc=()):
+        diffator = json_diff.Comparator(oldf, newf, inc, exc)
+        diff = diffator.compare_dicts()
+        expected = json.load(difff)
+        self.assertEqual(json.dumps(diff, sort_keys=True), json.dumps(expected, sort_keys=True),
+                         msg + "\n\nexpected = %s\n\nobserved = %s" %
+                         (json.dumps(expected, sort_keys=True, indent=4, ensure_ascii=False),
+                          json.dumps(diff, sort_keys=True, indent=4, ensure_ascii=False)))
+
+    def _run_test_formatted(self, oldf, newf, difff, msg=""):
+        diffator = json_diff.Comparator(oldf, newf)
+        diff = ("\n".join([line.strip() \
+                for line in unicode(json_diff.HTMLFormatter(diffator.compare_dicts())).split("\n")])).strip()
+        expected = ("\n".join([line.strip() for line in difff if line])).strip()
+        self.assertEqual(diff, expected, msg +
+                         "\n\nexpected = %s\n\nobserved = %s" %
+                         (expected, diff))
+
     def test_empty(self):
         diffator = json_diff.Comparator({}, {})
         diff = diffator.compare_dicts()
         self.assertEqual(json.dumps(diff).strip(), "{}",
              "Empty objects diff.\n\nexpected = %s\n\nobserved = %s" %
-             (str({}), str(diff)))
+             ({}, diff))
 
     def test_simple(self):
-        diffator = json_diff.Comparator(StringIO(SIMPLE_OLD), StringIO(SIMPLE_NEW))
-        diff = diffator.compare_dicts()
-        expected = json.loads(SIMPLE_DIFF)
-        self.assertEqual(diff, expected, "All-scalar objects diff." +
-                         "\n\nexpected = %s\n\nobserved = %s" %
-                         (str(expected), str(diff)))
+        self._run_test(StringIO(SIMPLE_OLD), StringIO(SIMPLE_NEW), StringIO(SIMPLE_DIFF),
+                "All-scalar objects diff.")
+
+    def test_simple_formatted(self):
+        self._run_test_formatted(StringIO(SIMPLE_OLD), StringIO(SIMPLE_NEW),
+            StringIO(SIMPLE_DIFF_HTML),
+            "All-scalar objects diff (formatted).")
+
+    def test_simple_array(self):
+        self._run_test(StringIO(SIMPLE_ARRAY_OLD), StringIO(SIMPLE_ARRAY_NEW),
+            StringIO(SIMPLE_ARRAY_DIFF), "Simple array objects diff.")
 
     def test_realFile(self):
-        diffator = json_diff.Comparator(open("test/old.json"), open("test/new.json"))
-        diff = diffator.compare_dicts()
-        expected = json.load(open("test/diff.json"))
-        self.assertEqual(diff, expected, "Simply nested objects (from file) diff." +
-                         "\n\nexpected = %s\n\nobserved = %s" %
-                         (str(expected), str(diff)))
+        self._run_test(open("test/old.json"), open("test/new.json"),
+            open("test/diff.json"), "Simply nested objects (from file) diff.")
 
     def test_nested(self):
-        diffator = json_diff.Comparator(StringIO(NESTED_OLD), StringIO(NESTED_NEW))
-        diff = diffator.compare_dicts()
-        expected = json.loads(NESTED_DIFF)
-        self.assertEqual(diff, expected, "Nested objects diff. " +
-                         "\n\nexpected = %s\n\nobserved = %s" %
-                         (str(expected), str(diff)))
+        self._run_test(StringIO(NESTED_OLD), StringIO(NESTED_NEW),
+            StringIO(NESTED_DIFF), "Nested objects diff.")
+
+    # def test_nested_excluded(self):
+        # self._run_test(StringIO(NESTED_OLD), StringIO(NESTED_NEW),
+            # StringIO(NESTED_DIFF_EXCL), "Nested objects diff.", exc=("name"))
+
+#    def test_piglit_results(self):
+#        self._run_test(open("test/old-testing-data.json"), open("test/new-testing-data.json"),
+#            open("test/diff-testing-data.json"), "Large piglit results diff.")
 
     def test_nested_formatted(self):
-        diffator = json_diff.Comparator(open("test/old.json"), open("test/new.json"))
-        diff = "\n".join([line.strip() \
-                for line in str(json_diff.HTMLFormatter(diffator.compare_dicts())).split("\n")])
-        expected = "\n".join([line.strip() for line in open("test/nested_html_output.html").readlines()])
-        self.assertEqual(diff, expected, "Simply nested objects (from file) diff formatted as HTML." +
-                         "\n\nexpected = %s\n\nobserved = %s" %
-                         (expected, diff))
+        self._run_test_formatted(open("test/old.json"), open("test/new.json"),
+            codecs.open("test/nested_html_output.html", "r", "utf-8"),
+            "Simply nested objects (from file) diff formatted as HTML.")
 
-
-NO_JSON_OLD = u"""
+NO_JSON_OLD = """
 THIS IS NOT A JSON STRING
 """
 
-NO_JSON_NEW = u"""
+NO_JSON_NEW = """
 AND THIS NEITHER
 """
 
