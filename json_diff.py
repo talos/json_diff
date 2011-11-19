@@ -23,14 +23,15 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 from __future__ import division, absolute_import, print_function, unicode_literals
-import json
+import json, sys
+# import pdb
 import logging
 from optparse import OptionParser
 
 __author__ = "Matěj Cepl"
 __version__ = "0.1.0"
 
-logging.basicConfig(format='%(levelname)s:%(funcName)s:%(message)s', level=logging.INFO)
+logging.basicConfig(format='%(levelname)s:%(funcName)s:%(message)s', level=logging.DEBUG)
 
 STYLE_MAP = {
     "_append": "append_class",
@@ -66,12 +67,14 @@ td {
   %s
 """
 
+# I would love to have better solution for this ...
+if sys.version_info[0] == 3: unicode = str
+
 def is_scalar(value):
     """
     Primitive version, relying on the fact that JSON cannot
     contain any more complicated data structures.
     """
-    logging.debug("? = %s", not isinstance(value, (list, tuple, dict)))
     return not isinstance(value, (list, tuple, dict))
 
 class HTMLFormatter(object):
@@ -108,13 +111,6 @@ class HTMLFormatter(object):
     # doesn't have level and neither concept of it, much
     def _format_dict(self, diff_dict, typch="unknown_change", level=0):
         out_str = ""
-        logging.debug("out_str = %s", out_str)
-
-        logging.debug("----------------------------------------------------------------")
-        logging.debug("diff_dict = %s", unicode(diff_dict))
-        logging.debug("level = %s", unicode(level))
-        logging.debug("diff_dict.keys() = %s", unicode(diff_dict.keys()))
-
         # For all STYLE_MAP keys which are present in diff_dict
         for typechange in set(diff_dict.keys()) & INTERNAL_KEYS:
             out_str += self._format_dict(diff_dict[typechange], typechange, level)
@@ -135,7 +131,7 @@ class Comparator(object):
     """
     Main workhorse, the object itself
     """
-    def __init__(self, fn1=None, fn2=None, excluded_attrs=(), included_attrs=()):
+    def __init__(self, fn1=None, fn2=None, included_attrs=(), excluded_attrs=()):
         self.obj1 = None
         self.obj2 = None
         if fn1:
@@ -159,9 +155,9 @@ class Comparator(object):
         """
         Be careful with the result of this function. Negative answer from this function
         is really None, not False, so deciding based on the return value like in
-        
+
         if self._compare_scalars(...):
-        
+
         leads to wrong answer (it should be if self._compare_scalars(...) is not None:)
         """
         # Explicitly excluded arguments
@@ -170,8 +166,10 @@ class Comparator(object):
                 (name in self.excluded_attributes)):
             return None
         elif old != new:
+            logging.debug("Comparing result (name=%s) is %s", name, new)
             return new
         else:
+            logging.debug("Comparing result (name=%s) is None", name)
             return None
 
     def _compare_arrays(self, old_arr, new_arr):
@@ -189,8 +187,6 @@ class Comparator(object):
             "_update": {}
         }
         for idx in range(inters):
-            logging.debug("idx = %s, old_arr[idx] = %s, new_arr[idx] = %s",
-                idx, old_arr[idx], new_arr[idx])
             # changed objects, new value is new_arr
             if (type(old_arr[idx]) != type(new_arr[idx])):
                 result['_update'][idx] = new_arr[idx]
@@ -259,15 +255,15 @@ class Comparator(object):
             # new_obj is missing
             elif name not in new_obj:
                 result['_remove'][name] = old_obj[name]
+            # We want to go through the tree post-order
+            elif isinstance(old_obj[name], dict):
+                res_dict = self.compare_dicts(old_obj[name], new_obj[name])
+                if (len(res_dict) > 0):
+                    result['_update'][name] = res_dict
+            # Now we are on the same level
             # changed objects, new value is new_obj
             elif (type(old_obj[name]) != type(new_obj[name])):
                 result['_update'][name] = new_obj[name]
-            # last simple variant ... scalars
-            elif (is_scalar(old_obj[name])):
-                # Explicitly excluded arguments
-                res_scal = self._compare_scalars(old_obj[name], new_obj[name], name)
-                if res_scal is not None:
-                    result['_update'][name] = res_scal
             # now arrays (we can be sure, that both old_obj and
             # new_obj are of the same type)
             elif (isinstance(old_obj[name], list)):
@@ -275,11 +271,12 @@ class Comparator(object):
                     new_obj[name])
                 if (len(res_arr) > 0):
                     result['_update'][name] = res_arr
-            # and now nested dicts
-            elif isinstance(old_obj[name], dict):
-                res_dict = self.compare_dicts(old_obj[name], new_obj[name])
-                if (len(res_dict) > 0):
-                    result['_update'][name] = res_dict
+            # the only thing remaining are scalars
+            else:
+                # Explicitly excluded arguments
+                res_scal = self._compare_scalars(old_obj[name], new_obj[name], name)
+                if res_scal is not None:
+                    result['_update'][name] = res_scal
 
         # Clear out unused keys in result
         out_result = {}
@@ -311,7 +308,7 @@ if __name__ == "__main__":
     diff = Comparator(file(args[0]), file(args[1]), options.exclude, options.include)
     if options.HTMLoutput:
         diff_res = diff.compare_dicts()
-        logging.debug("diff_res:\n%s", json.dumps(diff_res, indent=True))
+        # logging.debug("diff_res:\n%s", json.dumps(diff_res, indent=True))
         print(HTMLFormatter(diff_res))
     else:
         outs = json.dumps(diff.compare_dicts(), indent=4, ensure_ascii=False).encode("utf-8")
