@@ -7,8 +7,8 @@ type: :bugfix
 component: json_diff
 release: 
 reporter: Matej Cepl <mcepl@redhat.com>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2011-11-08 18:05:08.687378 Z
 references: []
 
@@ -18,3 +18,7 @@ log_events:
   - Matej Cepl <mcepl@redhat.com>
   - created
   - ""
+- - 2011-11-20 00:01:51.232208 Z
+  - Matej Cepl <mcepl@redhat.com>
+  - closed with disposition fixed
+  - Fixed ... nothing to do with odict, fortunately.

@@ -31,7 +31,7 @@ from optparse import OptionParser
 __author__ = "Matěj Cepl"
 __version__ = "0.1.0"
 
-logging.basicConfig(format='%(levelname)s:%(funcName)s:%(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(levelname)s:%(funcName)s:%(message)s', level=logging.INFO)
 
 STYLE_MAP = {
     "_append": "append_class",
@@ -146,10 +146,21 @@ class Comparator(object):
                 raise BadJSONError("Cannot decode object from JSON\n%s" % unicode(exc))
         self.excluded_attributes = excluded_attrs
         self.included_attributes = included_attrs
-        if self.obj1:
-            logging.debug("self.obj1:\n%s\n", json.dumps(self.obj1, indent=4))
-        if self.obj2:
-            logging.debug("self.obj2:\n%s\n", json.dumps(self.obj2, indent=4))
+
+    def _is_incex_key(self, key, value):
+        """Is this key excluded or not among included ones? If yes, it should be ignored.
+        """
+        key_out = ((self.included_attributes and (key not in self.included_attributes)) or
+                (key in self.excluded_attributes))
+        value_out = True
+        if isinstance(value, dict):
+            for change_key in value:
+                if isinstance(value[change_key], dict):
+                    for key in value[change_key]:
+                        if ((self.included_attributes and (key in self.included_attributes)) or
+                        (key not in self.excluded_attributes)):
+                            value_out = False
+        return key_out and value_out
 
     def _compare_scalars(self, old, new, name=None):
         """
@@ -161,11 +172,7 @@ class Comparator(object):
         leads to wrong answer (it should be if self._compare_scalars(...) is not None:)
         """
         # Explicitly excluded arguments
-        logging.debug("Comparing scalars %s and %s", old, new)
-        if ((self.included_attributes and (name not in self.included_attributes)) or
-                (name in self.excluded_attributes)):
-            return None
-        elif old != new:
+        if old != new:
             logging.debug("Comparing result (name=%s) is %s", name, new)
             return new
         else:
@@ -221,8 +228,6 @@ class Comparator(object):
             if len(result[key]) > 0:
                 out_result[key] = result[key]
 
-        logging.debug("out_result = %s",
-            json.dumps(out_result, indent=4))
         return out_result
 
     def compare_dicts(self, old_obj=None, new_obj=None):
@@ -278,11 +283,19 @@ class Comparator(object):
                 if res_scal is not None:
                     result['_update'][name] = res_scal
 
-        # Clear out unused keys in result
+        # Filter out non-included or excluded keys
+        # Also clear out unused keys in result
         out_result = {}
-        for key in result:
-            if len(result[key]) > 0:
-                out_result[key] = result[key]
+        for change_type in result:
+            temp_dict = {}            
+            for key in result[change_type]:
+                logging.debug("result[change_type] = %s, key = %s", unicode(result[change_type]), key)
+                logging.debug("self._is_incex_key(key, result[change_type][key]) = %s",
+                    self._is_incex_key(key, result[change_type][key]))
+                if not self._is_incex_key(key, result[change_type][key]):
+                    temp_dict[key] = result[change_type][key]
+            if len(temp_dict) > 0:
+                out_result[change_type] = temp_dict
 
         return out_result
 
@@ -305,7 +318,7 @@ if __name__ == "__main__":
     if len(args) != 2:
         parser.error("Script requires two positional arguments, names for old and new JSON file.")
 
-    diff = Comparator(file(args[0]), file(args[1]), options.exclude, options.include)
+    diff = Comparator(file(args[0]), file(args[1]), options.include, options.exclude)
     if options.HTMLoutput:
         diff_res = diff.compare_dicts()
         # logging.debug("diff_res:\n%s", json.dumps(diff_res, indent=True))

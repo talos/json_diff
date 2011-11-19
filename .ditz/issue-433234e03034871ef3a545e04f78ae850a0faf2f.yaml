@@ -1,0 +1,18 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: run with -i generates more than we bargained for.
+desc: In the output of -i I get some random keys which are not what we've asked for.
+type: :bugfix
+component: json_diff
+release: 
+reporter: Matej Cepl <mcepl@redhat.com>
+status: :unstarted
+disposition: 
+creation_time: 2011-11-20 00:02:33.643166 Z
+references: []
+
+id: 433234e03034871ef3a545e04f78ae850a0faf2f
+log_events: 
+- - 2011-11-20 00:02:34.623177 Z
+  - Matej Cepl <mcepl@redhat.com>
+  - created
+  - ""

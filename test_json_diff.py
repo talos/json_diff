@@ -35,18 +35,6 @@ class OurTestCase(unittest.TestCase):
                          "\n\nexpected = %s\n\nobserved = %s" %
                          (expected, diff))
 
-#class TestUtilities(unittest.TestCase):
-#    def test_is_dict_interesting(self):
-#        diffator = json_diff.Comparator(StringIO(NESTED_OLD), StringIO(NESTED_NEW),
-#                    included_attrs=('nome',))
-#        old_res = diffator.dict_no_key_included(diffator.obj1)
-#        self.assertFalse(old_res,
-#            "check whether the old dict should be excluded or not") # or True? FIXME
-#        new_res = diffator.dict_no_key_included(diffator.obj2)
-#        self.assertFalse(new_res,
-#            "check whether the new dict should be excluded or not") # or True? FIXME
-
-
 class TestBasicJSONHappyPath(OurTestCase):
     def test_empty(self):
         diffator = json_diff.Comparator({}, {})
@@ -106,11 +94,11 @@ class TestBasicJSONHappyPath(OurTestCase):
 
     def test_nested_excluded(self):
         self._run_test_strings(NESTED_OLD, NESTED_NEW, NESTED_DIFF_EXCL,
-            "Nested objects diff.", exc=("nome",))
+            "Nested objects diff with exclusion.", exc=("nome",))
 
-#    def test_nested_included(self):
-#        self._run_test_strings(NESTED_OLD, NESTED_NEW, NESTED_DIFF_INCL,
-#            "Nested objects diff.", inc=("nome",))
+    def test_nested_included(self):
+        self._run_test_strings(NESTED_OLD, NESTED_NEW, NESTED_DIFF_INCL,
+            "Nested objects diff.", inc=("nome",))
 
 class TestBasicJSONSadPath(OurTestCase):
     def test_no_JSON(self):
@@ -127,12 +115,10 @@ class TestBasicJSONSadPath(OurTestCase):
             '{"a": 01}', '{"a": 2}', '{"_update": {"a": 2}}',
             "Octal numbers not supported")
 
-
-#class TestPiglitData(OurTestCase):
-#    pass
-#    def test_piglit_results(self):
-#        self._run_test(open("test/old-testing-data.json"), open("test/new-testing-data.json"),
-#            open("test/diff-testing-data.json"), "Large piglit results diff.")
+# class TestPiglitData(OurTestCase):
+#     def test_piglit_results(self):
+#         self._run_test(open("test/old-testing-data.json"), open("test/new-testing-data.json"),
+#             open("test/diff-testing-data.json"), "Large piglit results diff.")
 
 if __name__ == "__main__":
     unittest.main()

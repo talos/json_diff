@@ -5,8 +5,8 @@ type: :feature
 component: json_diff
 release: 
 reporter: Matej Cepl <mcepl@redhat.com>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2011-11-16 11:06:20.989309 Z
 references: []
 
@@ -31,3 +31,7 @@ log_events:
                 # old_obj is missing
     is wrong. We need to dive into all dictionaries and arrays and only down there
     to decide.
+- - 2011-11-19 23:35:42.641169 Z
+  - Matej Cepl <mcepl@redhat.com>
+  - closed with disposition fixed
+  - Wov! I've made it!
