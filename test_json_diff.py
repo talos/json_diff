@@ -2,15 +2,19 @@
 """
 PyUnit unit tests
 """
-from __future__ import division, absolute_import, unicode_literals
-import unittest, sys
-if sys.version_info[0] == 3: unicode = str
-import json
+import unittest
+try:
+    import json
+except ImportError:
+    import simplejson as json
 import json_diff
-from io import StringIO
+from StringIO import StringIO
 import codecs
 
-from test_strings import * #@UnusedWildImport
+from test_strings import ARRAY_DIFF, ARRAY_NEW, ARRAY_OLD, \
+    NESTED_DIFF, NESTED_DIFF_EXCL, NESTED_DIFF_INCL, NESTED_NEW, NESTED_OLD, \
+    NO_JSON_NEW, NO_JSON_OLD, SIMPLE_ARRAY_DIFF, SIMPLE_ARRAY_NEW, \
+    SIMPLE_ARRAY_OLD, SIMPLE_DIFF, SIMPLE_DIFF_HTML, SIMPLE_NEW, SIMPLE_OLD
 
 class OurTestCase(unittest.TestCase):
     def _run_test(self, oldf, newf, difff, msg="", inc=(), exc=()):
@@ -35,7 +39,7 @@ class OurTestCase(unittest.TestCase):
                          "\n\nexpected = %s\n\nobserved = %s" %
                          (expected, diff))
 
-class TestBasicJSONHappyPath(OurTestCase):
+class TestBasicJSON(OurTestCase):
     def test_empty(self):
         diffator = json_diff.Comparator({}, {})
         diff = diffator.compare_dicts()
@@ -56,16 +60,16 @@ class TestBasicJSONHappyPath(OurTestCase):
             '{"_update": {"a": false}}', "Booleans")
 
     def test_integer(self):
-        self._run_test_strings('{"a": 1}', '{"a": 2}',
-            '{"_update": {"a": 2}}', "Integers")
+        self._run_test_strings(u'{"a": 1}', '{"a": 2}',
+            u'{"_update": {"a": 2}}', "Integers")
 
     def test_float(self):
-        self._run_test_strings('{"a": 1.0}', '{"a": 1.1}',
-            '{"_update": {"a": 1.1}}', "Floats")
+        self._run_test_strings(u'{"a": 1.0}', '{"a": 1.1}',
+            u'{"_update": {"a": 1.1}}', "Floats")
 
     def test_int_to_float(self):
-        self._run_test_strings('{"a": 1}', '{"a": 1.0}',
-            '{"_update": {"a": 1.0}}', "Integer changed to float")
+        self._run_test_strings(u'{"a": 1}', '{"a": 1.0}',
+            u'{"_update": {"a": 1.0}}', "Integer changed to float")
 
     def test_simple(self):
         self._run_test_strings(SIMPLE_OLD, SIMPLE_NEW, SIMPLE_DIFF,
@@ -80,6 +84,12 @@ class TestBasicJSONHappyPath(OurTestCase):
         self._run_test_strings(SIMPLE_ARRAY_OLD, SIMPLE_ARRAY_NEW,
             SIMPLE_ARRAY_DIFF, "Simple array objects diff.")
 
+    def test_another_array(self):
+        self._run_test_strings(ARRAY_OLD, ARRAY_NEW,
+            ARRAY_DIFF, "Array objects diff.")
+
+
+class TestHappyPath(OurTestCase):
     def test_realFile(self):
         self._run_test(open("test/old.json"), open("test/new.json"),
             open("test/diff.json"), "Simply nested objects (from file) diff.")
@@ -100,19 +110,19 @@ class TestBasicJSONHappyPath(OurTestCase):
         self._run_test_strings(NESTED_OLD, NESTED_NEW, NESTED_DIFF_INCL,
             "Nested objects diff.", inc=("nome",))
 
-class TestBasicJSONSadPath(OurTestCase):
+class TestadPath(OurTestCase):
     def test_no_JSON(self):
         self.assertRaises(json_diff.BadJSONError,
                 json_diff.Comparator, StringIO(NO_JSON_OLD), StringIO(NO_JSON_NEW))
 
     def test_bad_JSON_no_hex(self):
         self.assertRaises(json_diff.BadJSONError, self._run_test_strings,
-            '{"a": 0x1}', '{"a": 2}', '{"_update": {"a": 2}}',
+            u'{"a": 0x1}', '{"a": 2}', u'{"_update": {"a": 2}}',
             "Hex numbers not supported")
 
     def test_bad_JSON_no_octal(self):
         self.assertRaises(json_diff.BadJSONError, self._run_test_strings,
-            '{"a": 01}', '{"a": 2}', '{"_update": {"a": 2}}',
+            u'{"a": 01}', '{"a": 2}', u'{"_update": {"a": 2}}',
             "Octal numbers not supported")
 
 #class TestPiglitData(OurTestCase):

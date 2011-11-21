@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
-from __future__ import division, absolute_import, unicode_literals
 
-NO_JSON_OLD = """
+NO_JSON_OLD = u"""
 THIS IS NOT A JSON STRING
 """
 
-NO_JSON_NEW = """
+NO_JSON_NEW = u"""
 AND THIS NEITHER
 """
 
-SIMPLE_OLD = """
+SIMPLE_OLD = u"""
 {
     "a": 1,
     "b": true,
@@ -17,7 +16,7 @@ SIMPLE_OLD = """
 }
 """
 
-SIMPLE_NEW = """
+SIMPLE_NEW = u"""
 {
     "b": false,
     "c": "Maruška",
@@ -25,7 +24,7 @@ SIMPLE_NEW = """
 }
 """
 
-SIMPLE_DIFF =  """
+SIMPLE_DIFF =  u"""
 {
     "_append": {
         "d": "přidáno"
@@ -40,7 +39,7 @@ SIMPLE_DIFF =  """
 }
 """
 
-SIMPLE_DIFF_HTML="""
+SIMPLE_DIFF_HTML = u"""
 <!DOCTYPE html>
 <html lang='en'>
 <meta charset="utf-8" />
@@ -76,19 +75,19 @@ color: navy;
 </html>
 """
 
-SIMPLE_ARRAY_OLD = """
+SIMPLE_ARRAY_OLD = u"""
 {
    "a": [ 1 ]
 }
 """
 
-SIMPLE_ARRAY_NEW = """
+SIMPLE_ARRAY_NEW = u"""
 {
    "a": [ 1, 2 ]
 }
 """
 
-SIMPLE_ARRAY_DIFF = """
+SIMPLE_ARRAY_DIFF = u"""
 {
     "_update": {
         "a": {
@@ -100,7 +99,7 @@ SIMPLE_ARRAY_DIFF = """
 }
 """
 
-NESTED_OLD = """
+NESTED_OLD = u"""
 {
     "a": 1,
     "b": 2,
@@ -113,7 +112,7 @@ NESTED_OLD = """
 }
 """
 
-NESTED_NEW = """
+NESTED_NEW = u"""
 {
     "a": 2,
     "c": 3,
@@ -123,7 +122,7 @@ NESTED_NEW = """
 }
 """
 
-NESTED_DIFF = """
+NESTED_DIFF = u"""
 {
     "_append": {
         "c": 3
@@ -145,7 +144,7 @@ NESTED_DIFF = """
 }
 """
 
-NESTED_DIFF_EXCL = """
+NESTED_DIFF_EXCL = u"""
 {
     "_append": {
         "c": 3
@@ -162,7 +161,7 @@ NESTED_DIFF_EXCL = """
 }
 """
 
-NESTED_DIFF_INCL = """
+NESTED_DIFF_INCL = u"""
 {
     "_update": {
         "child": {
@@ -174,7 +173,7 @@ NESTED_DIFF_INCL = """
 }
 """
 
-ARRAY_OLD = """
+ARRAY_OLD = u"""
 {
     "a": 1,
     "b": 2,
@@ -184,7 +183,7 @@ ARRAY_OLD = """
 }
 """
 
-ARRAY_NEW = """
+ARRAY_NEW = u"""
 {
     "a": 1,
     "children": [
@@ -194,20 +193,20 @@ ARRAY_NEW = """
 }
 """
 
-ARRAY_DIFF = """
-{
-    "_remove": {
-        "b": 2
-    },
+ARRAY_DIFF = u"""
+ {
     "_append": {
         "c": 3
     },
+    "_remove": {
+        "b": 2
+    },
     "_update": {
-        "children": [
-            "Pepíček",
-            "Tonička",
-            "Maruška"
-        ]
+        "children": {
+            "_update": {
+                "1": "Tonička"
+            }
+        }
     }
 }
 """

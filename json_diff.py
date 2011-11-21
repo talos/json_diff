@@ -22,27 +22,28 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
-from __future__ import division, absolute_import, print_function, unicode_literals
-import json, sys
-# import pdb
+try:
+    import json
+except ImportError:
+    import simplejson as json
 import logging
 from optparse import OptionParser
 
 __author__ = "Matěj Cepl"
-__version__ = "0.9.0"
+__version__ = "0.9.2"
 
 logging.basicConfig(format='%(levelname)s:%(funcName)s:%(message)s', level=logging.INFO)
 
 STYLE_MAP = {
-    "_append": "append_class",
-    "_remove": "remove_class",
-    "_update": "update_class"
+    u"_append": u"append_class",
+    u"_remove": u"remove_class",
+    u"_update": u"update_class"
 }
 INTERNAL_KEYS = set(STYLE_MAP.keys())
 
-LEVEL_INDENT = "&nbsp;"
+LEVEL_INDENT = u"&nbsp;"
 
-out_str_template = """
+out_str_template = u"""
 <!DOCTYPE html>
 <html lang='en'>
 <meta charset="utf-8" />
@@ -67,9 +68,6 @@ td {
   %s
 """
 
-# I would love to have better solution for this ...
-if sys.version_info[0] == 3: unicode = str
-
 def is_scalar(value):
     """
     Primitive version, relying on the fact that JSON cannot
@@ -85,16 +83,16 @@ class HTMLFormatter(object):
     def _generate_page(self, in_dict, title="json_diff result"):
         out_str = out_str_template % (title, title,
             self._format_dict(in_dict))
-        out_str += """</table>
+        out_str += u"""</table>
   </body>
 </html>"""
         return out_str
 
     def _format_item(self, item, index, typch, level=0):
-        level_str = ("<td>" + LEVEL_INDENT + "</td>") * level
+        level_str = (u"<td>" + LEVEL_INDENT + u"</td>") * level
 
         if is_scalar(item):
-            out_str = ("<tr>\n  %s<td class='%s'>%s = %s</td>\n  </tr>\n" %
+            out_str = (u"<tr>\n  %s<td class='%s'>%s = %s</td>\n  </tr>\n" %
                 (level_str, STYLE_MAP[typch], index, unicode(item)))
         elif isinstance(item, (list, tuple)):
             out_str = self._format_array(item, typch, level + 1)
@@ -139,12 +137,12 @@ class Comparator(object):
         if fn1:
             try:
                 self.obj1 = json.load(fn1)
-            except (TypeError, OverflowError, ValueError) as exc:
+            except (TypeError, OverflowError, ValueError), exc:
                 raise BadJSONError("Cannot decode object from JSON.\n%s" % unicode(exc))
         if fn2:
             try:
                 self.obj2 = json.load(fn2)
-            except (TypeError, OverflowError, ValueError) as exc:
+            except (TypeError, OverflowError, ValueError), exc:
                 raise BadJSONError("Cannot decode object from JSON\n%s" % unicode(exc))
         self.excluded_attributes = excluded_attrs
         self.included_attributes = included_attrs
@@ -236,22 +234,22 @@ class Comparator(object):
         inters = min(len(old_arr), len(new_arr)) # this is the smaller length
 
         result = {
-            "_append": {},
-            "_remove": {},
-            "_update": {}
+            u"_append": {},
+            u"_remove": {},
+            u"_update": {}
         }
         for idx in range(inters):
             res = self._compare_elements(old_arr[idx], new_arr[idx])
             if res is not None:
-                result['_update'][idx] = res
+                result[u'_update'][idx] = res
 
         # the rest of the larger array
         if (inters == len(old_arr)):
             for idx in range(inters, len(new_arr)):
-                result['_append'][idx] = new_arr[idx]
+                result[u'_append'][idx] = new_arr[idx]
         else:
             for idx in range(inters, len(old_arr)):
-                result['_remove'][idx] = old_arr[idx]
+                result[u'_remove'][idx] = old_arr[idx]
 
         # Clear out unused keys in result
         out_result = {}
@@ -287,14 +285,14 @@ class Comparator(object):
         for name in keys:
             # old_obj is missing
             if name not in old_obj:
-                result['_append'][name] = new_obj[name]
+                result[u'_append'][name] = new_obj[name]
             # new_obj is missing
             elif name not in new_obj:
-                result['_remove'][name] = old_obj[name]
+                result[u'_remove'][name] = old_obj[name]
             else:
                 res = self._compare_elements(old_obj[name], new_obj[name])
                 if res is not None:
-                    result['_update'][name] = res
+                    result[u'_update'][name] = res
 
         return self._filter_results(result)
 
