@@ -317,12 +317,12 @@ if __name__ == "__main__":
     if len(args) != 2:
         parser.error("Script requires two positional arguments, names for old and new JSON file.")
 
-    diff = Comparator(file(args[0]), file(args[1]), options.include, options.exclude)
+    diff = Comparator(open(args[0]), open(args[1]), options.include, options.exclude)
     if options.HTMLoutput:
         diff_res = diff.compare_dicts()
         # logging.debug("diff_res:\n%s", json.dumps(diff_res, indent=True))
         print(HTMLFormatter(diff_res))
     else:
-        outs = json.dumps(diff.compare_dicts(), indent=4, ensure_ascii=False).encode("utf-8")
+        outs = json.dumps(diff.compare_dicts(), indent=4, ensure_ascii=False)
         outs = "\n".join([line for line in outs.split("\n")])
-        print(outs)
+        print(outs.encode("utf-8"))
