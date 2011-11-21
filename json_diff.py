@@ -97,9 +97,9 @@ class HTMLFormatter(object):
             out_str = ("<tr>\n  %s<td class='%s'>%s = %s</td>\n  </tr>\n" %
                 (level_str, STYLE_MAP[typch], index, unicode(item)))
         elif isinstance(item, (list, tuple)):
-            out_str = self._format_array(item, typch, level+1)
+            out_str = self._format_array(item, typch, level + 1)
         else:
-            out_str = self._format_dict(item, typch, level+1)
+            out_str = self._format_dict(item, typch, level + 1)
         return out_str.strip()
 
     def _format_array(self, diff_array, typch, level=0):
@@ -162,6 +162,53 @@ class Comparator(object):
                             value_out = False
         return key_out and value_out
 
+    def _filter_results(self, result):
+        """Whole -i or -x functionality. Rather than complicate logic while
+        going through the object’s tree we filter the result of plain
+        comparison.
+
+        Also clear out unused keys in result"""
+        out_result = {}
+        for change_type in result:
+            temp_dict = {}
+            for key in result[change_type]:
+                logging.debug("result[change_type] = %s, key = %s", unicode(result[change_type]), key)
+                logging.debug("self._is_incex_key(key, result[change_type][key]) = %s",
+                    self._is_incex_key(key, result[change_type][key]))
+                if not self._is_incex_key(key, result[change_type][key]):
+                    temp_dict[key] = result[change_type][key]
+            if len(temp_dict) > 0:
+                out_result[change_type] = temp_dict
+
+        return out_result
+
+    def _compare_elements(self, old, new):
+        res = None
+        # We want to go through the tree post-order
+        if isinstance(old, dict):
+            res_dict = self.compare_dicts(old, new)
+            if (len(res_dict) > 0):
+                res = res_dict
+        # Now we are on the same level
+        # different types, new value is new
+        elif (type(old) != type(new)):
+            res = new
+        # recursive arrays
+        # we can be sure now, that both new and old are
+        # of the same type
+        elif (isinstance(old, list)):
+            res_arr = self._compare_arrays(old, new)
+            if (len(res_arr) > 0):
+                res = res_arr
+        # the only thing remaining are scalars
+        else:
+            scalar_diff = self._compare_scalars(old, new)
+            if scalar_diff is not None:
+                res = scalar_diff
+
+        return res
+
+
     def _compare_scalars(self, old, new, name=None):
         """
         Be careful with the result of this function. Negative answer from this function
@@ -173,10 +220,8 @@ class Comparator(object):
         """
         # Explicitly excluded arguments
         if old != new:
-            logging.debug("Comparing result (name=%s) is %s", name, new)
             return new
         else:
-            logging.debug("Comparing result (name=%s) is None", name)
             return None
 
     def _compare_arrays(self, old_arr, new_arr):
@@ -194,25 +239,9 @@ class Comparator(object):
             "_update": {}
         }
         for idx in range(inters):
-            # changed objects, new value is new_arr
-            if (type(old_arr[idx]) != type(new_arr[idx])):
-                result['_update'][idx] = new_arr[idx]
-            # another simple variant ... scalars
-            elif (is_scalar(old_arr[idx])):
-                scalar_diff = self._compare_scalars(old_arr[idx], new_arr[idx])
-                if scalar_diff is not None:
-                    result['_update'][idx] = scalar_diff
-            # recursive arrays
-            elif (isinstance(old_arr[idx], list)):
-                res_arr = self._compare_arrays(old_arr[idx],
-                    new_arr[idx])
-                if (len(res_arr) > 0):
-                    result['_update'][idx] = res_arr
-            # and now nested dicts
-            elif isinstance(old_arr[idx], dict):
-                res_dict = self.compare_dicts(old_arr[idx], new_arr[idx])
-                if (len(res_dict) > 0):
-                    result['_update'][idx] = res_dict
+            res = self._compare_elements(old_arr[idx], new_arr[idx])
+            if res is not None:
+                result['_update'][idx] = res
 
         # the rest of the larger array
         if (inters == len(old_arr)):
@@ -228,7 +257,7 @@ class Comparator(object):
             if len(result[key]) > 0:
                 out_result[key] = result[key]
 
-        return out_result
+        return self._filter_results(result)
 
     def compare_dicts(self, old_obj=None, new_obj=None):
         """
@@ -260,44 +289,12 @@ class Comparator(object):
             # new_obj is missing
             elif name not in new_obj:
                 result['_remove'][name] = old_obj[name]
-            # We want to go through the tree post-order
-            elif isinstance(old_obj[name], dict):
-                res_dict = self.compare_dicts(old_obj[name], new_obj[name])
-                if (len(res_dict) > 0):
-                    result['_update'][name] = res_dict
-            # Now we are on the same level
-            # changed objects, new value is new_obj
-            elif (type(old_obj[name]) != type(new_obj[name])):
-                result['_update'][name] = new_obj[name]
-            # now arrays (we can be sure, that both old_obj and
-            # new_obj are of the same type)
-            elif (isinstance(old_obj[name], list)):
-                res_arr = self._compare_arrays(old_obj[name],
-                    new_obj[name])
-                if (len(res_arr) > 0):
-                    result['_update'][name] = res_arr
-            # the only thing remaining are scalars
             else:
-                # Explicitly excluded arguments
-                res_scal = self._compare_scalars(old_obj[name], new_obj[name], name)
-                if res_scal is not None:
-                    result['_update'][name] = res_scal
+                res = self._compare_elements(old_obj[name], new_obj[name])
+                if res is not None:
+                    result['_update'][name] = res
 
-        # Filter out non-included or excluded keys
-        # Also clear out unused keys in result
-        out_result = {}
-        for change_type in result:
-            temp_dict = {}            
-            for key in result[change_type]:
-                logging.debug("result[change_type] = %s, key = %s", unicode(result[change_type]), key)
-                logging.debug("self._is_incex_key(key, result[change_type][key]) = %s",
-                    self._is_incex_key(key, result[change_type][key]))
-                if not self._is_incex_key(key, result[change_type][key]):
-                    temp_dict[key] = result[change_type][key]
-            if len(temp_dict) > 0:
-                out_result[change_type] = temp_dict
-
-        return out_result
+        return self._filter_results(result)
 
 
 if __name__ == "__main__":

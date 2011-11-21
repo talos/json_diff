@@ -115,10 +115,10 @@ class TestBasicJSONSadPath(OurTestCase):
             '{"a": 01}', '{"a": 2}', '{"_update": {"a": 2}}',
             "Octal numbers not supported")
 
-# class TestPiglitData(OurTestCase):
-#     def test_piglit_results(self):
-#         self._run_test(open("test/old-testing-data.json"), open("test/new-testing-data.json"),
-#             open("test/diff-testing-data.json"), "Large piglit results diff.")
+#class TestPiglitData(OurTestCase):
+#    def test_piglit_results(self):
+#        self._run_test(open("test/old-testing-data.json"), open("test/new-testing-data.json"),
+#            open("test/diff-testing-data.json"), "Large piglit results diff.")
 
 if __name__ == "__main__":
     unittest.main()
