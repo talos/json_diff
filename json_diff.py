@@ -103,23 +103,25 @@ class HTMLFormatter(object):
         return out_str.strip()
 
     def _format_array(self, diff_array, typch, level=0):
-        out_str = ""
+        out_str = []
         for index in range(len(diff_array)):
-            out_str += self._format_item(diff_array[index], index, typch, level)
-        return out_str.strip()
+            out_str.append(self._format_item(diff_array[index], index, typch, level))
+        return ("".join(out_str)).strip()
 
     # doesn't have level and neither concept of it, much
     def _format_dict(self, diff_dict, typch="unknown_change", level=0):
-        out_str = ""
+        out_str = []
         # For all STYLE_MAP keys which are present in diff_dict
         for typechange in set(diff_dict.keys()) & INTERNAL_KEYS:
-            out_str += self._format_dict(diff_dict[typechange], typechange, level)
+            out_str.append(self._format_dict(diff_dict[typechange],
+                 typechange, level))
 
         # For all other non-internal keys
         for variable in set(diff_dict.keys()) - INTERNAL_KEYS:
-            out_str += self._format_item(diff_dict[variable], variable, typch, level)
+            out_str.append(self._format_item(diff_dict[variable],
+                 variable, typch, level))
 
-        return out_str.strip()
+        return ("".join(out_str)).strip()
 
     def __str__(self):
         return self._generate_page(self.diff)
