@@ -125,10 +125,15 @@ class TestadPath(OurTestCase):
             u'{"a": 01}', '{"a": 2}', u'{"_update": {"a": 2}}',
             "Octal numbers not supported")
 
-#class TestPiglitData(OurTestCase):
+class TestPiglitData(OurTestCase):
 #    def test_piglit_results(self):
 #        self._run_test(open("test/old-testing-data.json"), open("test/new-testing-data.json"),
 #            open("test/diff-testing-data.json"), "Large piglit results diff.")
+
+    def test_piglit_result_only(self):
+        self._run_test(open("test/old-testing-data.json"), open("test/new-testing-data.json"),
+            open("test/diff-result-only-testing-data.json"),
+            "Large piglit reports diff (just resume field).",  inc=('result',))
 
 if __name__ == "__main__":
     unittest.main()
