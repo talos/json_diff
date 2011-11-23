@@ -32,6 +32,8 @@ from optparse import OptionParser
 __author__ = "Matěj Cepl"
 __version__ = "0.9.2"
 
+import locale
+
 logging.basicConfig(format='%(levelname)s:%(funcName)s:%(message)s', level=logging.INFO)
 
 STYLE_MAP = {
@@ -43,8 +45,7 @@ INTERNAL_KEYS = set(STYLE_MAP.keys())
 
 LEVEL_INDENT = u"&nbsp;"
 
-out_str_template = u"""
-<!DOCTYPE html>
+out_str_template = u"""<!DOCTYPE html>
 <html lang='en'>
 <meta charset="utf-8" />
 <title>%s</title>
@@ -121,7 +122,7 @@ class HTMLFormatter(object):
 
         return ("".join(out_str)).strip()
 
-    def __str__(self):
+    def __unicode__(self):
         return self._generate_page(self.diff)
 
 class BadJSONError(ValueError):
@@ -318,9 +319,9 @@ if __name__ == "__main__":
     diff = Comparator(open(args[0]), open(args[1]), options.include, options.exclude)
     if options.HTMLoutput:
         diff_res = diff.compare_dicts()
-        # logging.debug("diff_res:\n%s", json.dumps(diff_res, indent=True))
-        print(HTMLFormatter(diff_res))
+        # we want to hardcode UTF-8 here, because that's what's in <meta> element
+        # of the generated HTML
+        print(unicode(HTMLFormatter(diff_res)).encode("utf-8"))
     else:
         outs = json.dumps(diff.compare_dicts(), indent=4, ensure_ascii=False)
-        outs = "\n".join([line for line in outs.split("\n")])
-        print(outs.encode("utf-8"))
+        print(outs.encode(locale.getpreferredencoding()))
