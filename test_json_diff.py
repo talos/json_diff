@@ -14,11 +14,12 @@ import codecs
 from test_strings import ARRAY_DIFF, ARRAY_NEW, ARRAY_OLD, \
     NESTED_DIFF, NESTED_DIFF_EXCL, NESTED_DIFF_INCL, NESTED_NEW, NESTED_OLD, \
     NO_JSON_NEW, NO_JSON_OLD, SIMPLE_ARRAY_DIFF, SIMPLE_ARRAY_NEW, \
+    NESTED_DIFF_IGNORING, \
     SIMPLE_ARRAY_OLD, SIMPLE_DIFF, SIMPLE_DIFF_HTML, SIMPLE_NEW, SIMPLE_OLD
 
 class OurTestCase(unittest.TestCase):
-    def _run_test(self, oldf, newf, difff, msg="", inc=(), exc=()):
-        diffator = json_diff.Comparator(oldf, newf, inc, exc)
+    def _run_test(self, oldf, newf, difff, msg="", opts=None):
+        diffator = json_diff.Comparator(oldf, newf, opts)
         diff = diffator.compare_dicts()
         expected = json.load(difff)
         self.assertEqual(json.dumps(diff, sort_keys=True), json.dumps(expected, sort_keys=True),
@@ -26,11 +27,12 @@ class OurTestCase(unittest.TestCase):
                          (json.dumps(expected, sort_keys=True, indent=4, ensure_ascii=False),
                           json.dumps(diff, sort_keys=True, indent=4, ensure_ascii=False)))
 
-    def _run_test_strings(self, olds, news, diffs, msg="", inc=(), exc=()):
-        self._run_test(StringIO(olds), StringIO(news), StringIO(diffs), msg, inc, exc)
+    def _run_test_strings(self, olds, news, diffs, msg="", opts=None):
+        self._run_test(StringIO(olds), StringIO(news), StringIO(diffs),
+            msg, opts)
 
-    def _run_test_formatted(self, oldf, newf, difff, msg=""):
-        diffator = json_diff.Comparator(oldf, newf)
+    def _run_test_formatted(self, oldf, newf, difff, msg="", opts=None):
+        diffator = json_diff.Comparator(oldf, newf, opts)
         diff = ("\n".join([line.strip() \
                 for line in unicode( \
                     json_diff.HTMLFormatter(diffator.compare_dicts())).split("\n")])).strip()
@@ -133,7 +135,8 @@ class TestPiglitData(OurTestCase):
     def test_piglit_result_only(self):
         self._run_test(open("test/old-testing-data.json"), open("test/new-testing-data.json"),
             open("test/diff-result-only-testing-data.json"),
-            "Large piglit reports diff (just resume field).",  inc=('result',))
+            "Large piglit reports diff (just resume field).",
+            {'included_attrs': ("result",)})
 
 if __name__ == "__main__":
     unittest.main()

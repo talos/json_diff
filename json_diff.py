@@ -132,7 +132,7 @@ class Comparator(object):
     """
     Main workhorse, the object itself
     """
-    def __init__(self, fn1=None, fn2=None, included_attrs=(), excluded_attrs=()):
+    def __init__(self, fn1=None, fn2=None, opts=None):
         self.obj1 = None
         self.obj2 = None
         if fn1:
@@ -144,22 +144,37 @@ class Comparator(object):
             try:
                 self.obj2 = json.load(fn2)
             except (TypeError, OverflowError, ValueError), exc:
-                raise BadJSONError("Cannot decode object from JSON\n%s" % unicode(exc))
-        self.excluded_attributes = excluded_attrs
-        self.included_attributes = included_attrs
+                raise BadJSONError("Cannot decode object from JSON\n%s" %
+                    unicode(exc))
+
+        if opts and ("excluded_attrs" in opts):
+            self.excluded_attributes = opts['excluded_attrs']
+        else:
+            self.excluded_attributes = ()
+        if opts and ("included_attrs" in opts):
+            self.included_attributes = opts['included_attrs']
+        else:
+            self.included_attributes = ()
+
+        if opts and ('ignore_append' in opts):
+            self.ignore_appended = opts['ignore_append']
+        else:
+            self.ignore_appended = False
 
     def _is_incex_key(self, key, value):
-        """Is this key excluded or not among included ones? If yes, it should be ignored.
-        """
-        key_out = ((self.included_attributes and (key not in self.included_attributes)) or
-                (key in self.excluded_attributes))
+        """Is this key excluded or not among included ones? If yes, it should
+        be ignored."""
+        key_out = ((self.included_attributes and
+                   (key not in self.included_attributes)) or
+                   (key in self.excluded_attributes))
         value_out = True
         if isinstance(value, dict):
             for change_key in value:
                 if isinstance(value[change_key], dict):
                     for key in value[change_key]:
-                        if ((self.included_attributes and (key in self.included_attributes)) or
-                        (key not in self.excluded_attributes)):
+                        if ((self.included_attributes and
+                             (key in self.included_attributes)) or
+                             (key not in self.excluded_attributes)):
                             value_out = False
         return key_out and value_out
 
@@ -173,8 +188,12 @@ class Comparator(object):
         for change_type in result:
             temp_dict = {}
             for key in result[change_type]:
-                logging.debug("result[change_type] = %s, key = %s", unicode(result[change_type]), key)
-                logging.debug("self._is_incex_key(key, result[change_type][key]) = %s",
+                logging.debug("change_type = %s", change_type)
+                if self.ignore_appended and (change_type == "_append"):
+                    continue
+                logging.debug("result[change_type] = %s, key = %s",
+                    unicode(result[change_type]), key)
+                logging.debug("self._is_incex_key = %s",
                     self._is_incex_key(key, result[change_type][key]))
                 if not self._is_incex_key(key, result[change_type][key]):
                     temp_dict[key] = result[change_type][key]
@@ -306,8 +325,11 @@ if __name__ == "__main__":
                   action="append", dest="exclude", metavar="ATTR", default=[],
                   help="attributes which should be ignored when comparing")
     parser.add_option("-i", "--include",
-                  action="append", dest="include", metavar="ATTR", default=[],
-                  help="attributes which should be exclusively used when comparing")
+      action="append", dest="include", metavar="ATTR", default=[],
+      help="attributes which should be exclusively used when comparing")
+    parser.add_option("-a", "--ignore-append",
+      action="store_true", dest="ignore_append", metavar="BOOL", default=False,
+      help="ignore appended keys")
     parser.add_option("-H", "--HTML",
                   action="store_true", dest="HTMLoutput", metavar="BOOL", default=False,
                   help="program should output to HTML report")
@@ -316,7 +338,7 @@ if __name__ == "__main__":
     if len(args) != 2:
         parser.error("Script requires two positional arguments, names for old and new JSON file.")
 
-    diff = Comparator(open(args[0]), open(args[1]), options.include, options.exclude)
+    diff = Comparator(open(args[0]), open(args[1]), options)
     if options.HTMLoutput:
         diff_res = diff.compare_dicts()
         # we want to hardcode UTF-8 here, because that's what's in <meta> element

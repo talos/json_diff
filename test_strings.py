@@ -173,6 +173,25 @@ NESTED_DIFF_INCL = u"""
 }
 """
 
+NESTED_DIFF_IGNORING = u"""
+{
+    "_remove": {
+        "b": 2,
+        "ignore": {
+            "else": true
+        }
+    },
+    "_update": {
+        "a": 2,
+        "child": {
+            "_update": {
+                "nome": "Maruška"
+            }
+        }
+    }
+}
+"""
+
 ARRAY_OLD = u"""
 {
     "a": 1,
