@@ -24,7 +24,7 @@ SIMPLE_NEW = u"""
 }
 """
 
-SIMPLE_DIFF =  u"""
+SIMPLE_DIFF = u"""
 {
     "_append": {
         "d": "přidáno"

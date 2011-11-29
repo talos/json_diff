@@ -9,9 +9,10 @@ setup(
     author = 'Matěj Cepl',
     author_email = 'mcepl@redhat.com',
     url = 'https://gitorious.org/json_diff/mainline',
-    download_url = "http://mcepl.fedorapeople.org/scripts/json_diff-%s.tar.gz" % json_diff.__version__,
     py_modules = ['json_diff', 'test_json_diff', 'test_strings'],
-    package_data = ['test/*'],
+    package_data = {
+        'json_diff': 'test/*'
+    },
     long_description = """Compares two JSON files (http://json.org) and
 generates a new JSON file with the result. Allows exclusion of some
 keys from the comparison, or in other way to include only some keys.""",

@@ -17,15 +17,19 @@ from test_strings import ARRAY_DIFF, ARRAY_NEW, ARRAY_OLD, \
     NESTED_DIFF_IGNORING, \
     SIMPLE_ARRAY_OLD, SIMPLE_DIFF, SIMPLE_DIFF_HTML, SIMPLE_NEW, SIMPLE_OLD
 
+
 class OurTestCase(unittest.TestCase):
     def _run_test(self, oldf, newf, difff, msg="", opts=None):
         diffator = json_diff.Comparator(oldf, newf, opts)
         diff = diffator.compare_dicts()
         expected = json.load(difff)
-        self.assertEqual(json.dumps(diff, sort_keys=True), json.dumps(expected, sort_keys=True),
+        self.assertEqual(json.dumps(diff, sort_keys=True),
+                         json.dumps(expected, sort_keys=True),
                          msg + "\n\nexpected = %s\n\nobserved = %s" %
-                         (json.dumps(expected, sort_keys=True, indent=4, ensure_ascii=False),
-                          json.dumps(diff, sort_keys=True, indent=4, ensure_ascii=False)))
+                         (json.dumps(expected, sort_keys=True, indent=4,
+                                     ensure_ascii=False),
+                          json.dumps(diff, sort_keys=True, indent=4,
+                                     ensure_ascii=False)))
 
     def _run_test_strings(self, olds, news, diffs, msg="", opts=None):
         self._run_test(StringIO(olds), StringIO(news), StringIO(diffs),
@@ -34,12 +38,15 @@ class OurTestCase(unittest.TestCase):
     def _run_test_formatted(self, oldf, newf, difff, msg="", opts=None):
         diffator = json_diff.Comparator(oldf, newf, opts)
         diff = ("\n".join([line.strip() \
-                for line in unicode( \
-                    json_diff.HTMLFormatter(diffator.compare_dicts())).split("\n")])).strip()
-        expected = ("\n".join([line.strip() for line in difff if line])).strip()
+                for line in unicode(\
+                    json_diff.HTMLFormatter(diffator.compare_dicts())).\
+                           split("\n")])).strip()
+        expected = ("\n".join([line.strip() for line in difff if line])).\
+            strip()
         self.assertEqual(diff, expected, msg +
                          "\n\nexpected = %s\n\nobserved = %s" %
                          (expected, diff))
+
 
 class TestBasicJSON(OurTestCase):
     def test_empty(self):
@@ -97,7 +104,8 @@ class TestHappyPath(OurTestCase):
             open("test/diff.json"), "Simply nested objects (from file) diff.")
 
     def test_nested(self):
-        self._run_test_strings(NESTED_OLD, NESTED_NEW, NESTED_DIFF, "Nested objects diff.")
+        self._run_test_strings(NESTED_OLD, NESTED_NEW, NESTED_DIFF,
+            "Nested objects diff.")
 
     def test_nested_formatted(self):
         self._run_test_formatted(open("test/old.json"), open("test/new.json"),
@@ -106,16 +114,24 @@ class TestHappyPath(OurTestCase):
 
     def test_nested_excluded(self):
         self._run_test_strings(NESTED_OLD, NESTED_NEW, NESTED_DIFF_EXCL,
-            "Nested objects diff with exclusion.", exc=("nome",))
+            "Nested objects diff with exclusion.",
+            {'excluded_attrs': ("nome",)})
 
     def test_nested_included(self):
         self._run_test_strings(NESTED_OLD, NESTED_NEW, NESTED_DIFF_INCL,
-            "Nested objects diff.", inc=("nome",))
+            "Nested objects diff.", {'included_attrs': ("nome",)})
+
+    def test_nested_ignoring_append(self):
+        self._run_test_strings(NESTED_OLD, NESTED_NEW, NESTED_DIFF_IGNORING,
+            "Nested objects diff.", {'ignore_append': True})
+
 
 class TestadPath(OurTestCase):
     def test_no_JSON(self):
         self.assertRaises(json_diff.BadJSONError,
-                json_diff.Comparator, StringIO(NO_JSON_OLD), StringIO(NO_JSON_NEW))
+                json_diff.Comparator, StringIO(NO_JSON_OLD),
+                StringIO(NO_JSON_NEW)
+        )
 
     def test_bad_JSON_no_hex(self):
         self.assertRaises(json_diff.BadJSONError, self._run_test_strings,
@@ -127,13 +143,16 @@ class TestadPath(OurTestCase):
             u'{"a": 01}', '{"a": 2}', u'{"_update": {"a": 2}}',
             "Octal numbers not supported")
 
+
 class TestPiglitData(OurTestCase):
 #    def test_piglit_results(self):
-#        self._run_test(open("test/old-testing-data.json"), open("test/new-testing-data.json"),
+#        self._run_test(open("test/old-testing-data.json"),
+#            open("test/new-testing-data.json"),
 #            open("test/diff-testing-data.json"), "Large piglit results diff.")
 
     def test_piglit_result_only(self):
-        self._run_test(open("test/old-testing-data.json"), open("test/new-testing-data.json"),
+        self._run_test(open("test/old-testing-data.json"),
+            open("test/new-testing-data.json"),
             open("test/diff-result-only-testing-data.json"),
             "Large piglit reports diff (just resume field).",
             {'included_attrs': ("result",)})
