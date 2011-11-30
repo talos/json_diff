@@ -32,7 +32,7 @@ import logging
 from optparse import OptionParser
 
 __author__ = "Matěj Cepl"
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 import locale
 
@@ -328,6 +328,7 @@ class Comparator(object):
 
         return self._filter_results(result)
 
+
 def main(sys_args):
     """Main function, to process command line arguments etc."""
     usage = "usage: %prog [options] old.json new.json"
@@ -345,21 +346,25 @@ def main(sys_args):
       action="store_true", dest="HTMLoutput", metavar="BOOL", default=False,
       help="program should output to HTML report")
     (options, args) = parser.parse_args(sys_args[1:])
-    print >> sys.stderr, "options = %s" % options
-    print >> sys.stderr, "args = %s" % args
 
     if len(args) != 2:
         parser.error("Script requires two positional arguments, " + \
             "names for old and new JSON file.")
     diff = Comparator(open(args[0]), open(args[1]), options)
+    diff_res = diff.compare_dicts()
     if options.HTMLoutput:
-        diff_res = diff.compare_dicts()
         # we want to hardcode UTF-8 here, because that's what's
         # in <meta> element of the generated HTML
         print(unicode(HTMLFormatter(diff_res)).encode("utf-8"))
     else:
-        outs = json.dumps(diff.compare_dicts(), indent=4, ensure_ascii=False)
+        outs = json.dumps(diff_res, indent=4, ensure_ascii=False)
         print(outs.encode(locale.getpreferredencoding()))
 
+    if len(diff_res) > 0:
+        return 1
+
+    return 0
+
 if __name__ == "__main__":
-    main(sys.argv)
+    main_res = main(sys.argv)
+    sys.exit(main_res)

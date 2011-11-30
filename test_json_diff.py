@@ -18,11 +18,13 @@ from test_strings import ARRAY_DIFF, ARRAY_NEW, ARRAY_OLD, \
     NESTED_DIFF_IGNORING, \
     SIMPLE_ARRAY_OLD, SIMPLE_DIFF, SIMPLE_DIFF_HTML, SIMPLE_NEW, SIMPLE_OLD
 
+
 class OptionsClass(object):
     def __init__(self, inc=None, exc=None, ign=None):
         self.exclude = exc
         self.include = inc
         self.ignore_append = ign
+
 
 class OurTestCase(unittest.TestCase):
     def _run_test(self, oldf, newf, difff, msg="", opts=None):
@@ -179,6 +181,26 @@ class TestMainArgsMgmt(unittest.TestCase):
 
         self.assertEquals(observed[:len(expected)], expected,
             "testing -h usage message")
+
+    def test_args_run_same(self):
+        save_stdout = StringIO()
+        sys.stdout = save_stdout
+
+        res = json_diff.main(["./test_json_diff.py",
+            "test/old.json", "test/old.json"])
+
+        sys.stdout = sys.__stdout__
+        self.assertEquals(res, 0, "testing -h usage message")
+
+    def test_args_run_different(self):
+        save_stdout = StringIO()
+        sys.stdout = save_stdout
+
+        res = json_diff.main(["./test_json_diff.py",
+            "test/old.json", "test/new.json"])
+
+        sys.stdout = sys.__stdout__
+        self.assertEquals(res, 1, "testing -h usage message")
 
 if __name__ == "__main__":
     unittest.main()
