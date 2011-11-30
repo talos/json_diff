@@ -4,6 +4,7 @@ PyUnit unit tests
 """
 import unittest
 import sys
+import locale
 try:
     import json
 except ImportError:
@@ -195,11 +196,14 @@ class TestMainArgsMgmt(unittest.TestCase):
     def test_args_run_different(self):
         save_stdout = StringIO()
         sys.stdout = save_stdout
+        cur_loc = locale.getlocale()
+        locale.setlocale(locale.LC_ALL, ("cs_CZ", "utf-8"))
 
         res = json_diff.main(["./test_json_diff.py",
             "test/old.json", "test/new.json"])
 
         sys.stdout = sys.__stdout__
+        locale.setlocale(locale.LC_ALL, cur_loc)
         self.assertEquals(res, 1, "testing -h usage message")
 
 if __name__ == "__main__":

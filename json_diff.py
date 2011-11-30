@@ -32,7 +32,7 @@ import logging
 from optparse import OptionParser
 
 __author__ = "Matěj Cepl"
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 import locale
 
@@ -358,7 +358,7 @@ def main(sys_args):
         print(unicode(HTMLFormatter(diff_res)).encode("utf-8"))
     else:
         outs = json.dumps(diff_res, indent=4, ensure_ascii=False)
-        print(outs.encode(locale.getpreferredencoding()))
+        print(outs.encode(locale.getpreferredencoding(do_setlocale=False)))
 
     if len(diff_res) > 0:
         return 1
