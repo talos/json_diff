@@ -3,6 +3,7 @@
 PyUnit unit tests
 """
 import unittest
+import sys
 try:
     import json
 except ImportError:
@@ -17,6 +18,11 @@ from test_strings import ARRAY_DIFF, ARRAY_NEW, ARRAY_OLD, \
     NESTED_DIFF_IGNORING, \
     SIMPLE_ARRAY_OLD, SIMPLE_DIFF, SIMPLE_DIFF_HTML, SIMPLE_NEW, SIMPLE_OLD
 
+class OptionsClass(object):
+    def __init__(self, inc=None, exc=None, ign=None):
+        self.exclude = exc
+        self.include = inc
+        self.ignore_append = ign
 
 class OurTestCase(unittest.TestCase):
     def _run_test(self, oldf, newf, difff, msg="", opts=None):
@@ -115,15 +121,15 @@ class TestHappyPath(OurTestCase):
     def test_nested_excluded(self):
         self._run_test_strings(NESTED_OLD, NESTED_NEW, NESTED_DIFF_EXCL,
             "Nested objects diff with exclusion.",
-            {'excluded_attrs': ("nome",)})
+            OptionsClass(exc=["nome"]))
 
     def test_nested_included(self):
         self._run_test_strings(NESTED_OLD, NESTED_NEW, NESTED_DIFF_INCL,
-            "Nested objects diff.", {'included_attrs': ("nome",)})
+            "Nested objects diff.", OptionsClass(inc=["nome"]))
 
     def test_nested_ignoring_append(self):
         self._run_test_strings(NESTED_OLD, NESTED_NEW, NESTED_DIFF_IGNORING,
-            "Nested objects diff.", {'ignore_append': True})
+            "Nested objects diff.", OptionsClass(ign=True))
 
 
 class TestadPath(OurTestCase):
@@ -145,17 +151,34 @@ class TestadPath(OurTestCase):
 
 
 class TestPiglitData(OurTestCase):
-#    def test_piglit_results(self):
-#        self._run_test(open("test/old-testing-data.json"),
-#            open("test/new-testing-data.json"),
-#            open("test/diff-testing-data.json"), "Large piglit results diff.")
-
     def test_piglit_result_only(self):
         self._run_test(open("test/old-testing-data.json"),
             open("test/new-testing-data.json"),
             open("test/diff-result-only-testing-data.json"),
             "Large piglit reports diff (just resume field).",
-            {'included_attrs': ("result",)})
+            OptionsClass(inc=["result"]))
+
+#    def test_piglit_results(self):
+#        self._run_test(open("test/old-testing-data.json"),
+#            open("test/new-testing-data.json"),
+#            open("test/diff-testing-data.json"), "Large piglit results diff.")
+
+
+class TestMainArgsMgmt(unittest.TestCase):
+    def test_args_help(self):
+        save_stdout = StringIO()
+        sys.stdout = save_stdout
+
+        try:
+            json_diff.main(["./test_json_diff.py", "-h"])
+        except SystemExit:
+            save_stdout.seek(0)
+            sys.stdout = sys.__stdout__
+            expected = "Usage:"
+            observed = save_stdout.read()
+
+        self.assertEquals(observed[:len(expected)], expected,
+            "testing -h usage message")
 
 if __name__ == "__main__":
     unittest.main()

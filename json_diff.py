@@ -27,6 +27,7 @@ try:
     import json
 except ImportError:
     import simplejson as json
+import sys
 import logging
 from optparse import OptionParser
 
@@ -162,19 +163,13 @@ class Comparator(object):
                 raise BadJSONError("Cannot decode object from JSON\n%s" %
                     unicode(exc))
 
-        if opts and ("excluded_attrs" in opts):
-            self.excluded_attributes = opts['excluded_attrs']
-        else:
-            self.excluded_attributes = ()
-        if opts and ("included_attrs" in opts):
-            self.included_attributes = opts['included_attrs']
-        else:
-            self.included_attributes = ()
-
-        if opts and ('ignore_append' in opts):
-            self.ignore_appended = opts['ignore_append']
-        else:
-            self.ignore_appended = False
+        self.excluded_attributes = []
+        self.included_attributes = []
+        self.ignore_appended = False
+        if opts:
+            self.excluded_attributes = opts.exclude or []
+            self.included_attributes = opts.include or []
+            self.ignore_appended = opts.ignore_append or False
 
     def _is_incex_key(self, key, value):
         """Is this key excluded or not among included ones? If yes, it should
@@ -333,10 +328,9 @@ class Comparator(object):
 
         return self._filter_results(result)
 
-
-if __name__ == "__main__":
+def main(sys_args):
+    """Main function, to process command line arguments etc."""
     usage = "usage: %prog [options] old.json new.json"
-    description = "Generates diff between two JSON files."
     parser = OptionParser(usage=usage)
     parser.add_option("-x", "--exclude",
       action="append", dest="exclude", metavar="ATTR", default=[],
@@ -350,12 +344,13 @@ if __name__ == "__main__":
     parser.add_option("-H", "--HTML",
       action="store_true", dest="HTMLoutput", metavar="BOOL", default=False,
       help="program should output to HTML report")
-    (options, args) = parser.parse_args()
+    (options, args) = parser.parse_args(sys_args[1:])
+    print >> sys.stderr, "options = %s" % options
+    print >> sys.stderr, "args = %s" % args
 
     if len(args) != 2:
         parser.error("Script requires two positional arguments, " + \
             "names for old and new JSON file.")
-
     diff = Comparator(open(args[0]), open(args[1]), options)
     if options.HTMLoutput:
         diff_res = diff.compare_dicts()
@@ -365,3 +360,6 @@ if __name__ == "__main__":
     else:
         outs = json.dumps(diff.compare_dicts(), indent=4, ensure_ascii=False)
         print(outs.encode(locale.getpreferredencoding()))
+
+if __name__ == "__main__":
+    main(sys.argv)
