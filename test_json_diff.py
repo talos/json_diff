@@ -197,7 +197,7 @@ class TestMainArgsMgmt(unittest.TestCase):
         save_stdout = StringIO()
         sys.stdout = save_stdout
         cur_loc = locale.getlocale()
-        locale.setlocale(locale.LC_ALL, ("cs_CZ", "utf-8"))
+        locale.setlocale(locale.LC_ALL, "cs_CZ.utf8")
 
         res = json_diff.main(["./test_json_diff.py",
             "test/old.json", "test/new.json"])
