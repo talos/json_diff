@@ -177,21 +177,28 @@ class TestMainArgsMgmt(unittest.TestCase):
         except SystemExit:
             save_stdout.seek(0)
             sys.stdout = sys.__stdout__
-            expected = "Usage:"
-            observed = save_stdout.read()
+            expected = "usage:"
+            observed = save_stdout.read().lower()
 
         self.assertEquals(observed[:len(expected)], expected,
-            "testing -h usage message")
+            "testing -h usage message" +
+                         "\n\nexpected = %s\n\nobserved = %s" %
+                         (expected, observed))
 
     def test_args_run_same(self):
         save_stdout = StringIO()
         sys.stdout = save_stdout
+        cur_loc = locale.getlocale()
+        locale.setlocale(locale.LC_ALL, "cs_CZ.utf8")
 
         res = json_diff.main(["./test_json_diff.py",
             "test/old.json", "test/old.json"])
 
         sys.stdout = sys.__stdout__
-        self.assertEquals(res, 0, "testing -h usage message")
+        locale.setlocale(locale.LC_ALL, cur_loc)
+        self.assertEquals(res, 0, "comparing same file" +
+                         "\n\nexpected = %d\n\nobserved = %d" %
+                         (0, res))
 
     def test_args_run_different(self):
         save_stdout = StringIO()
@@ -204,7 +211,9 @@ class TestMainArgsMgmt(unittest.TestCase):
 
         sys.stdout = sys.__stdout__
         locale.setlocale(locale.LC_ALL, cur_loc)
-        self.assertEquals(res, 1, "testing -h usage message")
+        self.assertEqual(res, 1, "comparing different files" +
+                         "\n\nexpected = %d\n\nobserved = %d" %
+                         (1, res))
 
 if __name__ == "__main__":
     unittest.main()
