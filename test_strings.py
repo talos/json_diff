@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 
 NO_JSON_OLD = u"""
 THIS IS NOT A JSON STRING

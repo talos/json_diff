@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 from distutils.core import setup
 import json_diff
 
@@ -8,7 +8,7 @@ setup(
     description='Generates diff between two JSON files',
     author='Matěj Cepl',
     author_email='mcepl@redhat.com',
-    url='https://luther.ceplovi.cz/trac/',
+    url='https://fedorahosted.org/json_diff/',
     py_modules=['json_diff', 'test_json_diff', 'test_strings'],
     package_data={
         'json_diff': 'test/*'

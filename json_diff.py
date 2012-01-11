@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """
 Script for comparing two objects
 
@@ -32,7 +32,7 @@ import logging
 from optparse import OptionParser
 
 __author__ = "Matěj Cepl"
-__version__ = "1.2.4"
+__version__ = "1.2.5"
 
 import locale
 
