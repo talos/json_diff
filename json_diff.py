@@ -32,7 +32,7 @@ import logging
 from optparse import OptionParser
 
 __author__ = "Matěj Cepl"
-__version__ = "1.2.5"
+__version__ = "1.2.7"
 
 import locale
 

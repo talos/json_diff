@@ -1,0 +1,45 @@
+1.2.7 2012-01-18
+ * Yet another (hopefully the last) fix of the development website. We are on fedorahosted.org now.
+
+1.2.6 2012-01-18
+ * Move tests to test/ module
+ * Clean up setup.py (when using defaults, install doesn’t install tests,
+   which I like)
+ * Add new setup.py command test to run the test suite.
+
+1.2.5 2012-01-11
+ * Switch the project’s website and clean up UTF-8 metadata.
+
+1.2.1 2011-12-03
+ * Change of the home URL to my trac.
+
+1.2.0 2011-12-01
+ * One more python 2.4 compatibility fix.
+    Maintainer of optparse library couldn't have a better idea than to change
+    "usage:" to "Usage:" (between 2.4 and 2.6)! Grrrrrrr.
+
+1.2.0 2011-12-01
+ * Fix locale.setlocale to work on RHEL 5.
+
+1.2.0 2011-11-30
+ * Make tests working independently of the locale set on the system.
+
+1.2.0 2011-11-30
+ * Set exit status of json_diff command.
+    0 means no difference
+    1 there is a difference.
+ * Now actually works correctly with non-mandatory options.
+
+1.1.0 2011-11-29
+ * Make scripts pylint and PEP8 compliant.
+ * Add option -a to ignore appended keys (for comparing changing piglit tests).
+ * Fix formatted output to stdout (or file).
+ * Added test for -i functionality.
+
+0.9.2 2011-11-21
+    Python 2.4 compatible
+
+0.9.1 2011-11-21
+    Two small nits in __main__ part.
+
+(for detailed log of all changes see git log)

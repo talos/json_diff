@@ -135,7 +135,7 @@ class TestHappyPath(OurTestCase):
             "Nested objects diff.", OptionsClass(ign=True))
 
 
-class TestadPath(OurTestCase):
+class TestBadPath(OurTestCase):
     def test_no_JSON(self):
         self.assertRaises(json_diff.BadJSONError,
                 json_diff.Comparator, StringIO(NO_JSON_OLD),
@@ -214,6 +214,15 @@ class TestMainArgsMgmt(unittest.TestCase):
         self.assertEqual(res, 1, "comparing different files" +
                          "\n\nexpected = %d\n\nobserved = %d" %
                          (1, res))
+
+add_tests_from_class = unittest.TestLoader().loadTestsFromTestCase
+
+suite = unittest.TestSuite()
+suite.addTest(add_tests_from_class(TestBasicJSON))
+suite.addTest(add_tests_from_class(TestHappyPath))
+suite.addTest(add_tests_from_class(TestBadPath))
+suite.addTest(add_tests_from_class(TestPiglitData))
+suite.addTest(add_tests_from_class(TestMainArgsMgmt))
 
 if __name__ == "__main__":
     unittest.main()
