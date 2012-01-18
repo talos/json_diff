@@ -1,1 +1,2 @@
 recursive-include test *.html *.json
+include NEWS.txt
