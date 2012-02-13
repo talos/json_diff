@@ -32,7 +32,7 @@ import logging
 from optparse import OptionParser
 
 __author__ = "Matěj Cepl"
-__version__ = "1.2.8"
+__version__ = "1.2.9"
 
 logging.basicConfig(format='%(levelname)s:%(funcName)s:%(message)s',
     level=logging.INFO)

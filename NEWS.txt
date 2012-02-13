@@ -1,4 +1,4 @@
-1.2.8 2012-02-13
+1.2.9 2012-02-13
  * Give up on non-UTF-8 encoding for output.
 
 1.2.7 2012-01-18
