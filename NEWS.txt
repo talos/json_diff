@@ -1,3 +1,6 @@
+1.2.8 2012-02-13
+ * Give up on non-UTF-8 encoding for output.
+
 1.2.7 2012-01-18
  * Yet another (hopefully the last) fix of the development website. We are on fedorahosted.org now.
 
